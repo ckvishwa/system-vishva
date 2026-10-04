@@ -19,8 +19,8 @@ const lab = await getCollection('lab');
     <HeroScene />
     <div class="wrap hero-copy">
       <p class="mono muted">AI systems / security / reliability</p>
-      <h1 class="display">Vishva<br />Teja</h1>
-      <p class="h2 claim redact">Building systems where probabilistic models don't control deterministic truth.</p>
+      <h1 class="display" data-fx="decrypt">Vishva<br />Teja</h1>
+      <p class="h2 claim" data-fx="redact">Building systems where probabilistic models don't control deterministic truth.</p>
       <a class="mono enter" href="#systems">Enter the system</a>
     </div>
   </section>
@@ -52,8 +52,6 @@ const lab = await getCollection('lab');
   .hero-copy .display { text-transform: uppercase; }
   .claim { max-width: 24ch; }
   .enter { color: var(--c-system); justify-self: start; border: 1px solid var(--c-system); padding: var(--s-2) var(--s-4); }
-  .hero::after { content: ''; position: absolute; inset: 0; z-index: var(--z-scene); pointer-events: none; background: repeating-linear-gradient(to bottom, var(--c-scan) 0 1px, transparent 1px 3px); } /* E7, static */
-  :global(html[data-tier='C']) .hero::after { display: none; }
   .enter:hover { background: var(--c-system); color: var(--c-bg); }
   .block { padding-block: var(--s-9) 0; display: grid; gap: var(--s-5); }
   .principles { list-style: none; display: grid; gap: var(--s-4); }

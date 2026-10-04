@@ -37,14 +37,14 @@ describe('signature registry', () => {
 describe('transition budget', () => {
   it('stays under 700 ms end to end', () => expect(TOTAL_MS).toBeLessThanOrEqual(700));
 
-  it('transitions.css uses the same morph duration as TIMING', () => {
-    const css = readFileSync('src/styles/transitions.css', 'utf8');
+  it('fx.css uses the same morph duration as TIMING', () => {
+    const css = readFileSync('src/styles/fx.css', 'utf8');
     expect(css).toContain(`animation-duration: ${TIMING.morph}ms`);
   });
 
   it('reduced motion and tier C disable pseudo-element animation', () => {
-    const css = readFileSync('src/styles/transitions.css', 'utf8');
-    expect(css).toMatch(/prefers-reduced-motion: reduce[\s\S]*animation: none !important/);
+    const css = readFileSync('src/styles/motion.css', 'utf8');
+    expect(css).toMatch(/prefers-reduced-motion: reduce[\s\S]*view-transition-group[\s\S]*animation: none !important/);
     expect(css).toContain("html[data-tier='C']::view-transition-old(*)");
   });
 });

@@ -1,0 +1,60 @@
+/*
+ * Atmosphere layer (ADR-0012). Everything here is removable: delete the fx import in global.css.
+ * Effects are declared on elements with data-fx="..." (ADR-0013 T9); hiding effects arm only while
+ * <html data-fx-mode="armed"> (tiers A/B, set before first paint, disarmed if the script fails).
+ */
+
+/* Redaction: a solid bar over a key phrase that is wiped away when it scrolls into view. The bar is a
+   pseudo-element; the text underneath is real and always in the HTML. Unarmed, failed or tier C: no bar. */
+[data-fx~='redact'] { position: relative; }
+[data-fx~='redact']::after { content: ''; position: absolute; inset: 0; background: var(--c-text); pointer-events: none; clip-path: inset(0 0 0 100%); }
+html[data-fx-mode='armed'] [data-fx~='redact']:not(.is-revealed)::after { clip-path: inset(0); }
+html[data-fx-mode='armed'] [data-fx~='redact'].is-revealed::after { transition: clip-path 400ms var(--e-step); }
+
+/* Static film grain, 3.5% overlay blend (an SVG feTurbulence data URI). Never animates.
+   Not a fixed full-screen layer (that costs scroll performance): only the hero and case-study headers, tier A only. */
+.hero, .case-head { position: relative; }
+html[data-tier='A'] :is(.hero, .case-head)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-content);
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-size: 160px 160px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Hero scanlines: static, 2% tint (--c-scan). Off under tier C. */
+.hero::after { content: ''; position: absolute; inset: 0; z-index: var(--z-scene); pointer-events: none; background: repeating-linear-gradient(to bottom, var(--c-scan) 0 1px, transparent 1px 3px); }
+html[data-tier='C'] .hero::after { display: none; }
+
+/*
+ * Page-transition signature (ARD §7 idea 4). Applies only while <html data-sig> is set by engine/transitions,
+ * i.e. a record -> case-study navigation with a known signature.
+ * Phases: form 180 ms (JS, outgoing page) -> morph 280 ms (below). 460 ms in total.
+ * Durations mirror TIMING in engine/transitions/signatures.ts; tests keep them in sync.
+ * (The reduced-motion / tier C instant swap lives in motion.css so it survives removing this layer.)
+ */
+@media (prefers-reduced-motion: no-preference) {
+  /* The waveform line morphs into the architecture diagram: geometry moves, the image swaps. */
+  html[data-sig]::view-transition-group(sig-line) { animation-duration: 280ms; animation-timing-function: var(--e-inout); }
+  html[data-sig]::view-transition-old(sig-line) { animation: sig-fade-out 140ms linear 140ms both; }
+  html[data-sig]::view-transition-new(sig-line) { animation: sig-fade-in 140ms linear 140ms both; }
+
+  /* Glitch (change): 3 held frames of slice offset on the outgoing title, then it is gone. Never loops. */
+  html[data-sig]::view-transition-group(sig-title) { animation-duration: 280ms; animation-timing-function: var(--e-inout); }
+  html[data-sig]::view-transition-old(sig-title) { animation: sig-glitch 120ms both, sig-fade-out 1ms linear 120ms both; }
+  html[data-sig]::view-transition-new(sig-title) { animation: sig-fade-in 160ms linear 120ms both; }
+  html[data-sig] .is-glitching { text-shadow: 1px 0 var(--c-risk), -1px 0 var(--c-info); }
+}
+
+@keyframes sig-fade-out { to { opacity: 0; } }
+@keyframes sig-fade-in { from { opacity: 0; } }
+@keyframes sig-glitch {
+  0%     { transform: translateX(0);    clip-path: inset(0);         animation-timing-function: step-end; }
+  33.3%  { transform: translateX(-6px); clip-path: inset(0 0 55% 0); animation-timing-function: step-end; }
+  66.6%  { transform: translateX(5px);  clip-path: inset(40% 0 0 0); animation-timing-function: step-end; }
+  100%   { transform: none;             clip-path: inset(0); }
+}

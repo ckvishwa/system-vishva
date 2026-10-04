@@ -1,5 +1,5 @@
 /**
- * Heading decrypt (meaning: change of state). On first view an H1's characters resolve from random
+ * Heading decrypt (meaning: change of state). On first view the characters of a heading marked data-fx="decrypt" (an H1) resolve from random
  * glyphs into the real text, left to right, in at most 500 ms, once per element. Never on body text,
  * never on hover. Runs on the shared scheduler.
  *
@@ -87,7 +87,7 @@ export function initDecrypt(root: ParentNode = document): () => void {
     return runs.size > 0;
   });
 
-  root.querySelectorAll<HTMLElement>('h1').forEach((h) => {
+  root.querySelectorAll<HTMLElement>('[data-fx~="decrypt"]').forEach((h) => {
     offs.push(onceVisible(h, () => {
       const r = arm(h);
       if (r) { runs.add(r); sched.invalidate('decrypt'); }

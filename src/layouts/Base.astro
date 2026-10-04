@@ -44,14 +44,14 @@ const fullTitle = title === 'Home' ? 'Vishva Teja Chikoti — AI systems, securi
         // and disarmed if the effects script has not reported ready within 4 s.
         const root = document.documentElement;
         if (t !== 'C') {
-          root.dataset.fx = 'armed';
-          setTimeout(() => { if (!root.dataset.fxReady) root.dataset.fx = 'failed'; }, 4000);
+          root.dataset.fxMode = 'armed';
+          setTimeout(() => { if (!root.dataset.fxReady) root.dataset.fxMode = 'failed'; }, 4000);
         }
         // ClientRouter swaps <html> attributes with the incoming page's (default "C"); carry the decided tier across.
         document.addEventListener('astro:before-swap', (e) => {
           const next = e.newDocument.documentElement;
           next.dataset.tier = t;
-          if (root.dataset.fx) next.dataset.fx = root.dataset.fx;
+          if (root.dataset.fxMode) next.dataset.fxMode = root.dataset.fxMode;
           if (root.dataset.fxReady) next.dataset.fxReady = root.dataset.fxReady;
         });
       })();

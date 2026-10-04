@@ -8,8 +8,8 @@ const value = (claim.data as { value?: number }).value;
 <figure class="metric" id={`claim-${claim.id}`}>
   <figcaption class="mono muted">{label}</figcaption>
   {evidence
-    ? <a class="value redact" href={evidence} rel="noopener" target="_blank" title="Open evidence" data-count data-value={value}>{display}</a>
-    : <span class="value redact unverified" title="Evidence pending" data-count data-value={value}>{display}</span>}
+    ? <a class="value" data-fx="redact" href={evidence} rel="noopener" target="_blank" title="Open evidence" data-count data-value={value}>{display}</a>
+    : <span class="value unverified" data-fx="redact" title="Evidence pending" data-count data-value={value}>{display}</span>}
 </figure>
 <style>
   .metric { padding: var(--s-5) var(--s-4) var(--s-5) 0; border-bottom: 1px solid var(--c-rule); display: grid; gap: var(--s-2); }

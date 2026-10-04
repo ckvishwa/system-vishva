@@ -10,7 +10,7 @@ const lab = (await getCollection('lab')).map((l) => ({
 ---
 <Base title="Lab">
   <section class="wrap" style="padding-block: var(--s-9)">
-    <h1 class="display">Lab</h1>
+    <h1 class="display" data-fx="decrypt">Lab</h1>
     <p class="h2 muted" style="max-width:28ch;margin-block:var(--s-5) var(--s-8)">Unfinished work, labelled by state.</p>
     {lab.map((l) => (
       <dl class="proc mono">

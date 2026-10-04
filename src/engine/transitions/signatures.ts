@@ -2,7 +2,7 @@
  * Page-transition signatures (ARD §7 idea 4). A signature turns a source on the outgoing page
  * into a named view-transition element ("sig-line") that morphs into a target on the incoming
  * page. The glitch (E5) is a phase of every signature, not a separate effect: the outgoing title
- * is renamed "sig-title" so transitions.css can play its 3-frame slice offset inside the window.
+ * is renamed "sig-title" so fx.css can play its 3-frame slice offset inside the window.
  *
  * MalTrace ("hash") plugs in by adding an entry to SIGNATURES; unknown signatures navigate normally.
  */
@@ -11,7 +11,7 @@ import { EASE } from '../motion/tokens';
 
 export type SignatureId = 'waveform' | 'hash' | 'stream' | 'stamp';
 
-/** Phase budget in ms. transitions.css repeats `morph`; a test keeps them in sync. Total stays under 700. */
+/** Phase budget in ms. fx.css repeats `morph`; a test keeps them in sync. Total stays under 700. */
 export const TIMING = { form: 180, morph: 280 } as const;
 export const TOTAL_MS = TIMING.form + TIMING.morph;
 

@@ -26,7 +26,7 @@ test('failsafe: if the effects script never reports ready, the bars disarm after
   await instrument(page);
   await page.route('**/_astro/Atmosphere*.js', (r) => r.abort());
   await page.goto('/');
-  await expect(page.locator('html')).toHaveAttribute('data-fx', 'failed', { timeout: 6000 });
+  await expect(page.locator('html')).toHaveAttribute('data-fx-mode', 'failed', { timeout: 6000 });
   expect(await barClip(page, '.claim')).toMatch(/100%/);
 });
 
@@ -35,7 +35,7 @@ test('reduced motion: no bars, no grain, no HUD, no decrypt, text intact', async
   const page = await ctx.newPage();
   await page.goto('/');
   await page.waitForTimeout(800);
-  await expect(page.locator('html')).not.toHaveAttribute('data-fx', /.+/);
+  await expect(page.locator('html')).not.toHaveAttribute('data-fx-mode', /.+/);
   expect(await barClip(page, '.claim')).toMatch(/100%/);
   expect(await page.evaluate(() => getComputedStyle(document.querySelector('.hero')!, '::before').content)).toBe('none');
   await expect(page.locator('[data-hud]')).toBeHidden();

@@ -1,13 +1,21 @@
-@import './tokens.css';
-@import './type.css';
-@import './motion.css';
-@import './transitions.css';
+/* ADR-0013 (T8): cascade layers. fx loads last and is trivially removable: delete the fx import and the site loses
+   its atmosphere, nothing else. (Component styles scoped in .astro files are unlayered and so sit above every layer.) */
+@layer reset, tokens, base, components, fx;
+@import './tokens.css' layer(tokens);
+@import './type.css' layer(base);
+@import './motion.css' layer(base);
+@import './components.css' layer(components);
+@import './fx.css' layer(fx);
 
+@layer reset {
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { background: var(--c-bg); color: var(--c-text); -webkit-text-size-adjust: 100%; color-scheme: dark; }
-body { min-height: 100dvh; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 img, svg, video, canvas { display: block; max-width: 100%; }
 a { color: inherit; text-decoration: none; }
+}
+
+@layer base {
+html { background: var(--c-bg); color: var(--c-text); -webkit-text-size-adjust: 100%; color-scheme: dark; }
+body { min-height: 100dvh; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 a:hover { color: var(--c-system); }
 ::selection { background: var(--c-system); color: var(--c-bg); }
 
@@ -29,18 +37,4 @@ a:hover { color: var(--c-system); }
   background-size: 48px 48px;
   background-position: -1px -1px;
 }
-
-/* ADR-0012 (E7): static film grain, 3.5% overlay blend (an SVG feTurbulence data URI). Never animates.
-   Not a fixed full-screen layer (that costs scroll performance): only the hero and case-study headers, tier A only. */
-.hero, .case-head { position: relative; }
-html[data-tier='A'] :is(.hero, .case-head)::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: var(--z-content);
-  pointer-events: none;
-  opacity: 0.035;
-  mix-blend-mode: overlay;
-  background-size: 160px 160px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }

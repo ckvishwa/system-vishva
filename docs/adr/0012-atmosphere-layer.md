@@ -12,7 +12,7 @@ transitions, a real-data HUD on the hero, static film grain (hero and case-study
 ## Rules (every effect must satisfy all of them)
 1. Runs through the scheduler. No `requestAnimationFrame` outside `src/engine/scheduler.ts`. CSS transitions are fine.
 2. Off under tier C and `prefers-reduced-motion`. Content still shows in its final state. Anything that could hide content
-   (redaction bars) is armed only by `<html data-fx="armed">`, which the pre-paint boot script sets for tiers A/B, and is
+   (redaction bars) is armed only by `<html data-fx-mode="armed">`, which the pre-paint boot script sets for tiers A/B, and is
    disarmed if the effects script does not report ready within 4 s.
 3. Animates only `transform`, `opacity` or `clip-path`. (Text-content updates such as the HUD are not animation.)
 4. Maps to one meaning: flow, state, dependency, cause, hierarchy or change.

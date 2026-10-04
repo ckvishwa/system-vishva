@@ -12,8 +12,8 @@ const claims = d.claimIds.length ? await getEntries(d.claimIds.map((id: string) 
   <article class="case" data-signature={d.signature}>
     <header class="wrap case-head">
       <p class="mono muted" data-scroll-depth="0.5">{d.category}</p>
-      <h1 class="display" transition:name={`title-${entry.id}`} data-sig-title>{d.title}</h1>
-      <p class="h2 thesis redact">{d.thesis}</p>
+      <h1 class="display" data-fx="decrypt" transition:name={`title-${entry.id}`} data-sig-title>{d.title}</h1>
+      <p class="h2 thesis" data-fx="redact">{d.thesis}</p>
     </header>
 
     <ScrollStory id={entry.id} pipeline={d.pipeline} story={d.story} claims={claims}>

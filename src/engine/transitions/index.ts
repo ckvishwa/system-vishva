@@ -2,7 +2,7 @@
  * Wires signatures into Astro's ClientRouter lifecycle. One call, one cleanup.
  *  before-preparation: outgoing phase runs while the next page loads (the loader is wrapped).
  *  before-swap:        names the target and the incoming title on the new document.
- * Reduced motion / tier C: nothing is hooked, and transitions.css makes the swap instant.
+ * Reduced motion / tier C: nothing is hooked, and motion.css makes the swap instant.
  */
 import { reducedMotion } from '../motion/tokens';
 import { signatureFor, LINE_NAME, TITLE_NAME } from './signatures';

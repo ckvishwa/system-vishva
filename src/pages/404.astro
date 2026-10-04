@@ -4,7 +4,7 @@ import Base from '../layouts/Base.astro';
 <Base title="Not found">
   <section class="wrap" style="padding-block: var(--s-10); display:grid; gap: var(--s-5)">
     <p class="mono risk">Request denied</p>
-    <h1 class="h1">This route is not in the allowlist.</h1>
+    <h1 class="h1" data-fx="decrypt">This route is not in the allowlist.</h1>
     <p class="muted">Failing closed. Return to a known state:</p>
     <a class="mono ok" href="/">Go to the homepage</a>
   </section>

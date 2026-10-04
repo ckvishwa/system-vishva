@@ -22,7 +22,7 @@ Site must make a reviewer think "this person thinks in systems", not "this perso
 ## Atmosphere layer (ADR-0012): Mr. Robot, not Hollywood hacker
 Quiet, watchful, slightly unsettling. All effects live in src/engine/fx/ and each one must:
 - run through the scheduler (CSS transitions allowed), no rAF elsewhere
-- be off under tier C and prefers-reduced-motion, content in its final state (arm hiding effects only via `html[data-fx='armed']`)
+- be off under tier C and prefers-reduced-motion, content in its final state (arm hiding effects only via `html[data-fx-mode='armed']`)
 - animate only transform, opacity or clip-path
 - map to one of: flow, state, dependency, cause, hierarchy, change
 - keep src/engine/fx/ under 4 KB gzipped (a unit test enforces it)

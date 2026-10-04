@@ -57,7 +57,7 @@ describe('decrypt (E4)', () => {
   beforeEach(() => {
     // happy-dom: every element is visible immediately
     (globalThis as any).IntersectionObserver = class { constructor(private cb: any) {} observe(el: Element) { this.cb([{ isIntersecting: true, target: el }]); } disconnect() {} };
-    document.body.innerHTML = '<h1 id="t">Vishva<br />Teja</h1>';
+    document.body.innerHTML = '<h1 id="t" data-fx="decrypt">Vishva<br />Teja</h1>';
   });
   it('keeps the real text for assistive tech, hides the scramble, and restores the DOM when done', async () => {
     const h = document.getElementById('t')!;
