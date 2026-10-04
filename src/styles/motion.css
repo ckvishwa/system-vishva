@@ -23,6 +23,13 @@
 html:not([data-tier='C']) [data-story]:not([data-story-failed]) .node:not(.is-active) { opacity: 0.3; }
 html:not([data-tier='C']) [data-story]:not([data-story-failed]) .trace:not(.is-drawn) { stroke-dashoffset: 1; }
 
+/* Redaction (ADR-0012, E3). The bar is a pseudo-element; the text underneath is real and always in the HTML.
+   It exists only while <html data-fx="armed"> (tiers A/B, pre-paint). Unarmed, failed or tier C: no bar at all. */
+.redact { position: relative; }
+.redact::after { content: ''; position: absolute; inset: 0; background: var(--c-text); pointer-events: none; clip-path: inset(0 0 0 100%); }
+html[data-fx='armed'] .redact:not(.is-revealed)::after { clip-path: inset(0); }
+html[data-fx='armed'] .redact.is-revealed::after { transition: clip-path 400ms var(--e-step); }
+
 /* Tier C / reduced motion: final state, no movement (ARD §8 hard gate) */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

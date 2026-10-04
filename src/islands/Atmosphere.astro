@@ -1,0 +1,11 @@
+---
+// Atmosphere layer (ADR-0012): redaction reveal, heading decrypt, case-study depth, console greeting. No markup.
+---
+<script>
+  import { mountFx } from '../engine/fx';
+
+  let stop: (() => void) | null = null;
+  const release = () => { stop?.(); stop = null; };
+  document.addEventListener('astro:page-load', () => { release(); stop = mountFx(); });
+  document.addEventListener('astro:before-swap', release);
+</script>

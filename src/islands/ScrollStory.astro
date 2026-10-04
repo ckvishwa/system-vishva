@@ -24,7 +24,7 @@ const caption = (g: { nodes: [number, number]; proposal: number[] }, last: boole
     </section>
     {hasStory && story.map((g, i) => (
       <section class="wrap beat" data-beat={g.proposal.length ? 'dependency' : 'flow'} data-nodes={range(g)} aria-label={`Pipeline stages ${two(g.nodes[0])} to ${two(i === story.length - 1 ? pipeline.length : g.nodes[1])}`}>
-        <ol class="steps mono">
+        <ol class="steps mono" data-scroll-depth="0.5">
           {caption(g, i === story.length - 1).map((s) => (
             <li><span class="muted">{two(s.no)}</span> {s.n}{s.proposal && <span class="muted"> (proposal)</span>}</li>
           ))}

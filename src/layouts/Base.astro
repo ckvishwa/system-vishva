@@ -6,6 +6,7 @@ import { ClientRouter } from 'astro:transitions';
 import Nav from '../components/ui/Nav.astro';
 import StatusBar from '../components/ui/StatusBar.astro';
 import Transitions from '../islands/Transitions.astro';
+import Atmosphere from '../islands/Atmosphere.astro';
 
 interface Props { title: string; description?: string; motion?: boolean }
 const { title, description = 'AI systems engineering with security and reliability as first-class constraints.', motion = true } = Astro.props;
@@ -38,8 +39,20 @@ const fullTitle = title === 'Home' ? 'Vishva Teja Chikoti — AI systems, securi
         else if (m('(pointer: coarse)')) t = 'B';
         else if (cores >= 8 && (mem === null || mem >= 8)) t = 'A';
         document.documentElement.dataset.tier = t;
+        // ADR-0012: atmosphere effects that can hide content (redaction bars) are armed only for tiers A/B,
+        // and disarmed if the effects script has not reported ready within 4 s.
+        const root = document.documentElement;
+        if (t !== 'C') {
+          root.dataset.fx = 'armed';
+          setTimeout(() => { if (!root.dataset.fxReady) root.dataset.fx = 'failed'; }, 4000);
+        }
         // ClientRouter swaps <html> attributes with the incoming page's (default "C"); carry the decided tier across.
-        document.addEventListener('astro:before-swap', (e) => { e.newDocument.documentElement.dataset.tier = t; });
+        document.addEventListener('astro:before-swap', (e) => {
+          const next = e.newDocument.documentElement;
+          next.dataset.tier = t;
+          if (root.dataset.fx) next.dataset.fx = root.dataset.fx;
+          if (root.dataset.fxReady) next.dataset.fxReady = root.dataset.fxReady;
+        });
       })();
     </script>
     {motion && <ClientRouter fallback="swap" />}
@@ -50,5 +63,6 @@ const fullTitle = title === 'Home' ? 'Vishva Teja Chikoti — AI systems, securi
     <main id="main"><slot /></main>
     <StatusBar />
     <Transitions />
+    <Atmosphere />
   </body>
 </html>
