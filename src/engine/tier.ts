@@ -44,8 +44,9 @@ export function currentTier(): Tier {
   return t === 'A' || t === 'B' ? t : 'C';
 }
 
+/** Node count always comes from systems-graph.yaml; tiers vary DPR and edge subdivision only. */
 export const TIER_CONFIG = {
-  A: { dpr: 1.5, nodes: 64, render: true, gyro: false, cursor: true },
-  B: { dpr: 1.25, nodes: 32, render: true, gyro: true, cursor: false },
-  C: { dpr: 1, nodes: 0, render: false, gyro: false, cursor: false },
+  A: { dpr: 1.5, edgeSegments: 12, render: true, gyro: false, cursor: true },
+  B: { dpr: 1.25, edgeSegments: 6, render: true, gyro: true, cursor: false },
+  C: { dpr: 1, edgeSegments: 0, render: false, gyro: false, cursor: false },
 } as const;
