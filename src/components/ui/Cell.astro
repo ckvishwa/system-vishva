@@ -1,0 +1,20 @@
+---
+// Spec-sheet cell (ADR-0013 T1): a ruled box, mono label top-left, a large tabular-nums value and an optional
+// status chip. Cells tile edge-to-edge inside .cells (shared borders, no gaps, no floating cards). Styles live
+// in styles/components.css; the cell is a container, so it adapts to its column, not the viewport (T10).
+interface Props {
+  label: string;
+  value?: string;
+  /** pass = operational (--c-system), block = risk (--c-risk), info = information (--c-info) */
+  status?: 'pass' | 'block' | 'info';
+  chip?: string;
+  /** numeric part for the shared count-up; the visible text is already final */
+  count?: number;
+}
+const { label, value, status, chip, count } = Astro.props;
+const chipText = chip ?? (status === 'pass' ? 'PASS' : status === 'block' ? 'BLOCK' : undefined);
+---
+<div class="cell" data-status={status}>
+  <p class="cell-head mono"><span class="muted">{label}</span>{status && chipText && <span class="chip" data-tone={status}>{chipText}</span>}</p>
+  <p class="cell-value" data-count={count !== undefined ? '' : undefined} data-value={count}>{value}<slot /></p>
+</div>

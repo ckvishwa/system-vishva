@@ -3,6 +3,7 @@
 interface Props { index: number; slug: string; title: string; category: string; pipeline: string[]; metrics: string[]; signature?: string }
 const { index, slug, title, category, pipeline, metrics, signature } = Astro.props;
 ---
+<div class="record-cq">
 <a class="record" href={`/work/${slug}/`} data-cursor="open" data-sig={signature}>
   <span class="idx mono muted">{String(index).padStart(2, '0')}</span>
   <span class="title h1" transition:name={`title-${slug}`} data-sig-title>{title}</span>
@@ -12,7 +13,10 @@ const { index, slug, title, category, pipeline, metrics, signature } = Astro.pro
     {pipeline.map((p) => <li>{p}</li>)}
   </ol>
 </a>
+</div>
 <style>
+  /* T10: the record adapts to its column, not the viewport. */
+  .record-cq { container-type: inline-size; }
   .record { display: grid; grid-template-columns: 3ch 1fr auto; gap: var(--s-2) var(--s-5); align-items: baseline; padding-block: var(--s-6); border-top: 1px solid var(--c-rule); }
   .idx { grid-row: span 2; }
   .cat { color: var(--c-muted); grid-column: 2; }
@@ -21,5 +25,5 @@ const { index, slug, title, category, pipeline, metrics, signature } = Astro.pro
   .pipe li + li::before { content: '→'; padding-inline: var(--s-2); color: var(--c-muted); }
   .record:hover .pipe, .record:focus-visible .pipe { max-height: 4em; opacity: 1; padding-top: var(--s-3); }
   .record:hover .title { color: var(--c-system); }
-  @media (max-width: 720px) { .record { grid-template-columns: 3ch 1fr; } .metrics { grid-column: 2; grid-row: auto; text-align: left; } .pipe { max-height: none; opacity: 1; } }
+  @container (max-width: 680px) { .record { grid-template-columns: 3ch 1fr; } .metrics { grid-column: 2; grid-row: auto; text-align: left; } .pipe { max-height: none; opacity: 1; } }
 </style>

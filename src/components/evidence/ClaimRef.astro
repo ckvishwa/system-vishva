@@ -1,18 +1,26 @@
 ---
-// ARD §7 idea 2 — a metric that can show its source. Phase 2 turns this into the evidence drawer.
+// ARD §7 idea 2: a metric that can show its source, as a spec-sheet cell (ADR-0013 T1).
+// The chip is the claim's real state from claims.yaml: VERIFIED (has an evidence link) or UNVERIFIED.
+// Phase 2 turns this into the evidence drawer.
 interface Props { claim: { id: string; data: { label: string; display: string; value?: number; evidence: string | null; evidenceNote?: string } } }
 const { claim } = Astro.props;
-const { label, display, evidence } = claim.data;
-const value = (claim.data as { value?: number }).value;
+const { label, display, evidence, value } = claim.data;
 ---
-<figure class="metric" id={`claim-${claim.id}`}>
-  <figcaption class="mono muted">{label}</figcaption>
-  {evidence
-    ? <a class="value" data-fx="redact" href={evidence} rel="noopener" target="_blank" title="Open evidence" data-count data-value={value}>{display}</a>
-    : <span class="value unverified" data-fx="redact" title="Evidence pending" data-count data-value={value}>{display}</span>}
+<figure class="cell metric" id={`claim-${claim.id}`} data-status={evidence ? 'pass' : 'block'}>
+  <figcaption class="cell-head mono">
+    <span class="muted">{label}</span>
+    <span class="chip" data-tone={evidence ? 'pass' : 'block'}>{evidence ? 'VERIFIED' : 'UNVERIFIED'}</span>
+  </figcaption>
+  <p class="cell-value">
+    {evidence
+      ? <a class="value" data-fx="redact" href={evidence} rel="noopener" target="_blank" title="Open evidence" data-count data-value={value}>{display}</a>
+      : <span class="value" data-fx="redact" title="Evidence pending" data-count data-value={value}>{display}</span>}
+  </p>
 </figure>
 <style>
-  .metric { padding: var(--s-5) var(--s-4) var(--s-5) 0; border-bottom: 1px solid var(--c-rule); display: grid; gap: var(--s-2); }
-  .value { display: inline-block; justify-self: start; font-size: var(--t-xl); font-weight: 650; letter-spacing: -0.02em; text-decoration: underline dotted var(--c-muted); text-underline-offset: 6px; }
-  .unverified { text-decoration: none; }
+  /* The value keeps its own colour; the chip carries the status. */
+  .metric { margin: 0; }
+  .metric :global(.cell-value) { color: var(--c-text); }
+  .value { display: inline-block; justify-self: start; }
+  a.value { text-decoration: underline dotted var(--c-muted); text-underline-offset: 6px; }
 </style>

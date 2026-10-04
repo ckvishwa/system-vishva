@@ -23,3 +23,5 @@ body { font-family: var(--f-sans); font-size: var(--t-base); line-height: var(--
 .h1 { font-size: var(--t-2xl); line-height: 1; letter-spacing: var(--track-tight); font-weight: 650; }
 .h2 { font-size: var(--t-xl); line-height: 1.05; letter-spacing: -0.02em; font-weight: 600; }
 .prose { max-width: 68ch; }
+/* T6: every number lines up. Metrics, timecodes, tables, labels with digits. */
+.mono, td, th, dd, time, .value, [data-count], .num { font-variant-numeric: tabular-nums; }

@@ -18,7 +18,7 @@ const caption = (g: { nodes: [number, number]; proposal: number[] }, last: boole
 };
 ---
 <div class="story" data-story={hasStory ? id : undefined}>
-  <div class="pipeline">
+  <div class="pipeline sec">
     <section class="wrap stage" aria-label="Architecture">
       <ArchDiagram nodes={pipeline} id={id} proposal={proposal} />
     </section>
@@ -34,12 +34,12 @@ const caption = (g: { nodes: [number, number]; proposal: number[] }, last: boole
   </div>
 
   {!hasStory && claims.length > 0 && (
-    <section class="wrap metrics" aria-label="Measured results">
-      {claims.map((c: any) => <ClaimRef claim={c} />)}
+    <section class="wrap metrics sec" aria-label="Measured results">
+      <div class="cells">{claims.map((c: any) => <ClaimRef claim={c} />)}</div>
     </section>
   )}
 
-  <section class="wrap prose body"><slot /></section>
+  <section class="wrap prose body sec"><slot /></section>
 
   {hasStory && (
     <section class="wrap" data-beat="change" data-placeholder aria-label="Model proposal against server authorization">
@@ -52,8 +52,8 @@ const caption = (g: { nodes: [number, number]; proposal: number[] }, last: boole
   )}
 
   {hasStory && claims.length > 0 && (
-    <section class="wrap metrics" data-beat="state" aria-label="Measured results">
-      {claims.map((c: any) => <ClaimRef claim={c} />)}
+    <section class="wrap metrics sec" data-beat="state" aria-label="Measured results">
+      <div class="cells">{claims.map((c: any) => <ClaimRef claim={c} />)}</div>
     </section>
   )}
 </div>
@@ -81,7 +81,7 @@ const caption = (g: { nodes: [number, number]; proposal: number[] }, last: boole
   .stage { position: sticky; top: 56px; z-index: var(--z-content); background: var(--c-bg); }
   .beat { min-height: 60vh; display: grid; align-content: center; }
   .steps { list-style: none; display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-6); font-size: var(--t-sm); }
-  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); border-top: 1px solid var(--c-rule); margin-block: var(--s-7); }
+  .metrics { padding-top: var(--s-6); margin-block: var(--s-7); }
   .body { padding-block: var(--s-7); }
   .body :global(h2) { font-size: var(--t-xl); margin-block: var(--s-7) var(--s-3); letter-spacing: -0.02em; }
   .body :global(p) { margin-bottom: var(--s-4); color: var(--c-text); }
