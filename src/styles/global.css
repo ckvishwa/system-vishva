@@ -6,6 +6,7 @@
 @import './motion.css' layer(base);
 @import './components.css' layer(components);
 @import './fx.css' layer(fx);
+@import '../generated/transitions.css' layer(fx); /* title morph names, generated from the work collection */
 
 @layer reset {
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

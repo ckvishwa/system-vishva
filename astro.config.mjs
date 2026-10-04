@@ -9,5 +9,7 @@ export default defineConfig({
   output: 'static',
   integrations: [mdx(), sitemap()],
   prefetch: { prefetchAll: false, defaultStrategy: 'hover' },
-  build: { inlineStylesheets: 'auto' },
+  // Strict CSP: no inline <style> and no inlined scripts. The only inline code is the pre-paint tier script, allowed by hash.
+  build: { inlineStylesheets: 'never' },
+  vite: { build: { assetsInlineLimit: 0 } },
 });

@@ -4,6 +4,7 @@
 // cross-fades to the canvas once its first frame has rendered.
 import { parse } from 'yaml';
 import GridCoords from '../components/ui/GridCoords.astro';
+import '../generated/graph.css'; // node positions, generated from systems-graph.yaml by scripts/build-manifest.ts
 import raw from '../content/systems-graph.yaml?raw';
 const g = parse(raw) as { nodes: { id: string; label: string; x: number; y: number }[]; edges: [string, string][] };
 const pos = Object.fromEntries(g.nodes.map((n) => [n.id, n]));
@@ -17,7 +18,7 @@ const graph = JSON.stringify({ nodes: g.nodes, edges: g.edges });
       {g.edges.map(([a, b]) => <line x1={pos[a].x} y1={pos[a].y} x2={pos[b].x} y2={pos[b].y} vector-effect="non-scaling-stroke" />)}
     </svg>
     {g.nodes.map((n) => (
-      <span class="node mono" style={`left:${n.x}%;top:${n.y}%`} data-node={n.id}><i></i><span class="lbl">{n.label}</span></span>
+      <span class="node mono" data-node={n.id}><i></i><span class="lbl">{n.label}</span></span>
     ))}
   </div>
   <!-- HUD (ADR-0012 E6): real session time, pointer and route. Static text until the hero script updates it; hidden in tier C. -->

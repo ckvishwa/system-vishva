@@ -15,7 +15,10 @@
     "gate": "tsx scripts/gate.ts",
     "size:report": "tsx scripts/size-report.ts",
     "test:report": "vitest run --reporter=default --reporter=json --outputFile.json=src/generated/tests.json",
-    "preview:lan": "astro preview --host"
+    "preview:lan": "astro preview --host",
+    "predev": "tsx scripts/verify-claims.ts && tsx scripts/build-manifest.ts",
+    "check:headers": "tsx scripts/check-headers.ts",
+    "csp:update": "tsx scripts/check-headers.ts --write"
   },
   "dependencies": {
     "@astrojs/mdx": "^8.0.2",

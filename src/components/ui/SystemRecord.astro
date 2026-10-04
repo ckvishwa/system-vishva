@@ -6,7 +6,7 @@ const { index, slug, title, category, pipeline, metrics, signature } = Astro.pro
 <div class="record-cq">
 <a class="record hard-lift" href={`/work/${slug}/`} data-cursor="open" data-sig={signature}>
   <span class="idx mono muted">{String(index).padStart(2, '0')}</span>
-  <span class="title h1" transition:name={`title-${slug}`} data-sig-title>{title}</span>
+  <span class="title h1" data-vt={`title-${slug}`} data-sig-title>{title}</span>
   <span class="cat">{category}</span>
   <span class="metrics mono">{metrics.join('   ')}</span>
   <ol class="pipe mono" aria-label={`${title} pipeline`}>

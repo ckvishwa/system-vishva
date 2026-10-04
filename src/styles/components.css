@@ -46,6 +46,14 @@
 /* ---- T4 grid coordinates ---- */
 .coords { position: absolute; inset: 0 0 auto 0; height: 14px; overflow: hidden; pointer-events: none; font-size: 9px; color: var(--c-muted); }
 .coords span { position: absolute; top: 2px; padding-left: 3px; }
+.coords span:nth-child(1) { left: 0px; }
+.coords span:nth-child(2) { left: 192px; }
+.coords span:nth-child(3) { left: 384px; }
+.coords span:nth-child(4) { left: 576px; }
+.coords span:nth-child(5) { left: 768px; }
+.coords span:nth-child(6) { left: 960px; }
+.coords span:nth-child(7) { left: 1152px; }
+.coords span:nth-child(8) { left: 1344px; }
 
 /* ---- T2 hard offset shadow: an affordance, so it exists only on interactive elements (links styled as
    blocks, buttons, records) and never on static content. .hard rests with the shadow and presses into it;
@@ -75,3 +83,12 @@ html[data-tier='C'] :is(.hard, .hard-lift):is(:hover, :focus-visible) { transfor
 .term-ps { color: var(--c-system); white-space: nowrap; }
 .term-input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--c-text); font-size: 16px; /* 16px: iOS does not zoom */ outline-offset: 4px; }
 @media (max-width: 720px) { .term { height: 100dvh; } }
+
+/* ---- page utilities. Inline style attributes are not allowed (strict CSP), so spacing lives here. ---- */
+.pad-9 { padding-block: var(--s-9); }
+.mt-4 { margin-top: var(--s-4); }
+.mt-6 { margin-top: var(--s-6); }
+.lede-28 { max-width: 28ch; margin-block: var(--s-5) var(--s-8); }
+.lede-26 { max-width: 26ch; margin-top: var(--s-5); }
+.page-404 { padding-block: var(--s-10); display: grid; gap: var(--s-5); }
+.contact-list { list-style: none; margin-top: var(--s-6); display: grid; gap: var(--s-3); font-size: var(--t-base); }

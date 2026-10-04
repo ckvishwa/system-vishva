@@ -8,6 +8,7 @@
  *   5. build    SECOND build, on purpose: the first build could not know the size numbers (they exist only
  *               after a build), so this one bakes the real figures into /status and the homepage strip.
  *               What ships is always this second build's output.
+ *   6. headers  vercel.json security headers exist and the CSP hashes match the built HTML
  *
  * Claims are strict everywhere except Vercel preview deployments (VERCEL_ENV=preview): a preview of work in
  * progress still deploys so it can be tested on a phone, and it shows BLOCK on /status honestly. Production
@@ -22,6 +23,7 @@ const steps: Array<[string, string]> = [
   ['build', 'npm run build'],
   ['size', 'npm run size:report'],
   ['build (final, with measured sizes)', 'npm run build'],
+  ['headers', 'npm run check:headers'],
 ];
 
 if (preview) console.log('gate: Vercel preview, so claims are advisory (production stays strict)\n');
