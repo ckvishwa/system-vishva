@@ -1,0 +1,119 @@
+---
+// System status, as a dense spec sheet. Every value is generated at build time from the repo, or read live in
+// the browser (the render panel). Nothing here is typed in. Panels whose data is missing are left out.
+import Base from '../layouts/Base.astro';
+import Cell from '../components/ui/Cell.astro';
+import { getCollection } from 'astro:content';
+import { shownStatus } from '../content/lab-status';
+import build from '../generated/build.json';
+
+const claims = await getCollection('claims');
+const lab = (await getCollection('lab')).sort((a, b) => b.data.lastTouched.getTime() - a.data.lastTouched.getTime());
+const gates = build.gates ?? [];
+const day = (iso?: string | null) => (iso ? iso.slice(0, 10) : undefined);
+const history = build.log.slice(0, 15);
+---
+<Base title="Status">
+  <section class="wrap head" data-grid-coords>
+    <p class="mono muted">System status</p>
+    <h1 class="display" data-fx="decrypt">Status</h1>
+    <p class="mono muted">Generated at build from commit {build.commit} on {build.date}. Test and size figures come from the most recent run and show when they were measured.</p>
+  </section>
+
+  <section class="wrap sec panel" aria-labelledby="gate-h">
+    <h2 id="gate-h" class="mono muted">Release gate</h2>
+    <div class="cells">
+      <Cell label="Verdict" value={build.gate.toUpperCase()} status={build.gate === 'pass' ? 'pass' : 'block'} note="any failing or unverified check blocks" />
+      {gates.map((g: any) => <Cell label={g.label} value={g.value} status={g.status} note={g.measuredAt ? `${g.detail}, measured ${day(g.measuredAt)}` : g.detail} />)}
+    </div>
+  </section>
+
+  <section class="wrap sec panel" aria-labelledby="claims-h">
+    <h2 id="claims-h" class="mono muted">Claims ledger</h2>
+    <div class="scroll">
+      <table class="ledger mono">
+        <thead><tr><th scope="col">Id</th><th scope="col">Value</th><th scope="col">Project</th><th scope="col">Evidence</th></tr></thead>
+        <tbody>
+          {claims.map((c) => (
+            <tr>
+              <th scope="row">{c.id}</th>
+              <td>{c.data.display} <span class="muted">{c.data.label.toLowerCase()}</span></td>
+              <td>{c.data.project}</td>
+              <td>{c.data.evidence ? <a href={c.data.evidence} rel="noopener" target="_blank">{c.data.evidence.replace(/^https?:\/\//, '')}</a> : <span class="risk">UNVERIFIED</span>}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="wrap sec panel" aria-labelledby="render-h">
+    <h2 id="render-h" class="mono muted">This visitor</h2>
+    <div class="cells" data-render-panel>
+      <Cell label="Render tier" value="—" note="decided before first paint" status="info" chip="LIVE" />
+      <Cell label="Device pixel ratio" value="—" />
+      <Cell label="WebGL2" value="—" />
+      <Cell label="Reduced motion" value="—" />
+    </div>
+    <noscript><p class="mono muted">Read in your browser. Without JavaScript the site renders as tier C.</p></noscript>
+  </section>
+
+  <section class="wrap sec panel" aria-labelledby="hist-h">
+    <h2 id="hist-h" class="mono muted">Build history</h2>
+    <ol class="mono feed">
+      {history.map((l) => <li><span class="muted">{l.date}</span> <span class="info">{l.hash}</span> {l.subject}</li>)}
+    </ol>
+  </section>
+
+  <section class="wrap sec panel" aria-labelledby="lab-h">
+    <h2 id="lab-h" class="mono muted">Lab processes</h2>
+    <div class="scroll">
+      <table class="ledger mono">
+        <thead><tr><th scope="col">Name</th><th scope="col">Status</th><th scope="col">Stage</th><th scope="col">Last touched</th></tr></thead>
+        <tbody>
+          {lab.map((l) => {
+            const shown = shownStatus(l.data.status, l.data.lastTouched);
+            return (
+              <tr>
+                <th scope="row">{l.data.title}</th>
+                <td class={shown === 'active' ? 'ok' : 'muted'}>{shown}</td>
+                <td>{l.data.stage}</td>
+                <td><time datetime={l.data.lastTouched.toISOString().slice(0, 10)}>{l.data.lastTouched.toISOString().slice(0, 10)}</time></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</Base>
+<script>
+  import { readSignals, currentTier, TIER_CONFIG } from '../engine/tier';
+
+  // The render panel is read live in this browser; nothing about it is known at build time.
+  const paint = () => {
+    const panel = document.querySelector('[data-render-panel]');
+    if (!panel) return;
+    const s = readSignals();
+    const tier = currentTier();
+    const values = [
+      [tier, tier === 'C' ? 'static: no WebGL' : `WebGL, DPR capped at ${TIER_CONFIG[tier].dpr}`],
+      [String(window.devicePixelRatio || 1), undefined],
+      [s.webgl2 ? 'yes' : 'no', undefined],
+      [s.reducedMotion ? 'yes' : 'no', undefined],
+    ] as const;
+    panel.querySelectorAll<HTMLElement>('.cell').forEach((cell, i) => {
+      cell.querySelector('.cell-value')!.textContent = values[i][0];
+      const note = cell.querySelector('.cell-note');
+      if (note && values[i][1]) note.textContent = values[i][1]!;
+    });
+  };
+  document.addEventListener('astro:page-load', paint);
+</script>
+<style>
+  .head { padding-block: var(--s-9) var(--s-7); display: grid; gap: var(--s-4); }
+  .panel { padding-block: var(--s-6) 0; margin-top: var(--s-8); display: grid; gap: var(--s-5); }
+  .scroll { overflow-x: auto; }
+  .feed { list-style: none; display: grid; gap: var(--s-2); font-size: var(--t-sm); }
+  .feed li { border-top: 1px solid var(--c-grid); padding-top: var(--s-2); }
+</style>

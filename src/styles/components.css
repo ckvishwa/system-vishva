@@ -23,6 +23,7 @@
 .chip[data-tone='pass'], .cell[data-status='pass'] .cell-value { color: var(--c-system); }
 .chip[data-tone='block'], .cell[data-status='block'] .cell-value { color: var(--c-risk); }
 .chip[data-tone='info'], .cell[data-status='info'] .cell-value { color: var(--c-info); }
+.cell-note { font-size: 10px; margin-top: calc(var(--s-2) * -1); }
 @container (max-width: 12rem) {
   .cell-head { flex-direction: column; align-items: flex-start; }
   .cell-value { font-size: var(--t-lg); }
@@ -34,3 +35,9 @@
 
 /* ---- T5 structural weight: a 4px rule opens each major section, 1px everywhere else ---- */
 .sec { border-top: 4px solid var(--c-text); }
+
+/* ---- ledger tables (claims, lab): ruled rows, shared borders, numbers aligned ---- */
+.ledger { width: 100%; min-width: 36rem; border-collapse: collapse; font-size: var(--t-sm); }
+.ledger th, .ledger td { text-align: left; font-weight: 400; padding: var(--s-3) var(--s-4) var(--s-3) 0; border-bottom: 1px solid var(--c-rule); vertical-align: baseline; }
+.ledger thead th { color: var(--c-muted); font-size: var(--t-xs); border-bottom-color: var(--c-text); }
+.ledger tbody th { color: var(--c-text); }

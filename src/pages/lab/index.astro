@@ -1,11 +1,10 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
-const DAY = 864e5;
+import { shownStatus } from '../../content/lab-status';
 const lab = (await getCollection('lab')).map((l) => ({
   ...l.data,
-  // ARD L-11: stale "active" work is labelled honestly
-  shown: l.data.status === 'active' && Date.now() - l.data.lastTouched.getTime() > 90 * DAY ? 'dormant' : l.data.status,
+  shown: shownStatus(l.data.status, l.data.lastTouched), // ARD L-11
 }));
 ---
 <Base title="Lab">

@@ -27,7 +27,11 @@ export function decideTier(s: Signals): Tier {
 export function readSignals(): Signals {
   const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
   let webgl2 = false;
-  try { webgl2 = !!document.createElement('canvas').getContext('webgl2'); } catch { webgl2 = false; }
+  try {
+    const gl = document.createElement('canvas').getContext('webgl2');
+    webgl2 = !!gl;
+    gl?.getExtension('WEBGL_lose_context')?.loseContext(); // a probe must not hold a GPU context
+  } catch { webgl2 = false; }
   return {
     reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
     saveData: !!nav.connection?.saveData,

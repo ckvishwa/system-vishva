@@ -5,7 +5,7 @@ import build from '../../generated/build.json';
 <footer class="status mono" aria-label="Site status">
   <div class="wrap row">
     <span>Build {build.commit} · {build.date}</span>
-    <span>Gate: <b class={build.gate === 'pass' ? 'ok' : 'risk'}>{build.gate.toUpperCase()}</b></span>
+    <span>Gate: <a href="/status/" title="Open the full status page"><b class={build.gate === 'pass' ? 'ok' : 'risk'}>{build.gate.toUpperCase()}</b></a></span>
     <span>Render tier <b data-tier-label>C</b></span>
     <span>Status: <b class="ok">available</b></span>
   </div>

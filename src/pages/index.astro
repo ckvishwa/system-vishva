@@ -6,6 +6,7 @@ import TelemetryStrip from '../components/ui/TelemetryStrip.astro';
 import { getCollection, getEntries } from 'astro:content';
 import { parse } from 'yaml';
 import principlesRaw from '../content/principles.yaml?raw';
+import { shownStatus } from '../content/lab-status';
 
 const work = (await getCollection('work', (w) => !w.data.draft)).sort((a, b) => a.data.order - b.data.order);
 const records = await Promise.all(work.map(async (w) => {
@@ -42,7 +43,7 @@ const lab = await getCollection('lab');
 
   <section class="wrap block sec" aria-labelledby="labh">
     <h2 id="labh" class="mono muted">Current lab</h2>
-    <ul class="lab mono">{lab.map((l) => <li><span>{l.data.title}</span><span class="muted">{l.data.stage}</span><span class={l.data.status === 'active' ? 'ok' : 'muted'}>{l.data.status}</span></li>)}</ul>
+    <ul class="lab mono">{lab.map((l) => <li><span>{l.data.title}</span><span class="muted">{l.data.stage}</span><span class={shownStatus(l.data.status, l.data.lastTouched) === 'active' ? 'ok' : 'muted'}>{shownStatus(l.data.status, l.data.lastTouched)}</span></li>)}</ul>
     <a class="mono" href="/lab/">Open the lab</a>
   </section>
 </Base>

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('every primary route loads', async ({ page }) => {
-  for (const path of ['/', '/work/', '/work/rexi/', '/work/maltrace/', '/lab/', '/systems/', '/about/', '/contact/', '/plain/', '/logs/']) {
+  for (const path of ['/', '/work/', '/work/rexi/', '/work/maltrace/', '/lab/', '/systems/', '/status/', '/about/', '/contact/', '/plain/', '/logs/']) {
     const res = await page.goto(path);
     expect(res?.status(), path).toBe(200);
   }
