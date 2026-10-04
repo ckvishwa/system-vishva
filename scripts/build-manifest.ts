@@ -1,23 +1,64 @@
-/** Writes src/generated/build.json for the status bar and /logs (ARD §7 ideas 1 & 7). */
+/**
+ * Writes src/generated/build.json for the status bar, the homepage telemetry strip, /logs and /status
+ * (ARD §7 ideas 1 & 7). Everything in it is measured or read, never typed in:
+ *   - commit and history from git
+ *   - claims from scripts/verify-claims.ts
+ *   - test counts from vitest's JSON reporter   (src/generated/tests.json, `npm run test:report`)
+ *   - JS sizes from size-limit's JSON            (src/generated/size.json,  `npm run size:report`)
+ *   - page count from src/pages and the work collection
+ * If a source file is missing the matching field is omitted and the UI leaves that cell out. Test and
+ * size numbers come from the most recent run, so each carries the time it was measured.
+ */
 import { execSync } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
 const git = (cmd: string) => { try { return execSync(`git ${cmd}`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { return ''; } };
+const readJson = <T>(p: string): T | null => { try { return existsSync(p) ? (JSON.parse(readFileSync(p, 'utf8')) as T) : null; } catch { return null; } };
 
 const commit = git('rev-parse --short HEAD') || 'local';
+const today = new Date().toISOString().slice(0, 10);
 const log = (git('log -n 30 --pretty=format:%h|%ad|%s --date=short') || '')
   .split('\n').filter(Boolean)
   .map((l) => { const [hash, date, ...s] = l.split('|'); return { hash, date, subject: s.join('|') }; });
 
-const report = existsSync('src/generated/claims-report.json')
-  ? JSON.parse(readFileSync('src/generated/claims-report.json', 'utf8'))
-  : { problems: ['claims not checked'] };
+type Status = 'pass' | 'block';
+interface Gate { id: string; label: string; status: Status; value: string; measuredAt?: string }
+const gates: Gate[] = [];
+
+// claims
+const claims = readJson<{ total: number; verified: number; problems: string[] }>('src/generated/claims-report.json');
+if (claims) gates.push({ id: 'claims', label: 'Claims have evidence', status: claims.problems.length === 0 ? 'pass' : 'block', value: `${claims.verified}/${claims.total} verified` });
+
+// unit tests
+const tests = readJson<{ numTotalTests: number; numPassedTests: number; numFailedTests: number; startTime: number; success: boolean }>('src/generated/tests.json');
+const testsInfo = tests ? { passed: tests.numPassedTests, total: tests.numTotalTests, measuredAt: new Date(tests.startTime).toISOString() } : null;
+if (tests && testsInfo) gates.push({ id: 'tests', label: 'Unit tests', status: tests.success && tests.numFailedTests === 0 ? 'pass' : 'block', value: `${tests.numPassedTests}/${tests.numTotalTests} passing`, measuredAt: testsInfo.measuredAt });
+
+// JS budgets
+const size = readJson<{ measuredAt: string; results: { name: string; passed: boolean; size: number }[] }>('src/generated/size.json');
+const kb = (b: number) => Math.round((b / 1024) * 10) / 10;
+const js = size && size.results.length >= 2 ? { preLcpKb: kb(size.results[0].size), totalKb: kb(size.results[1].size), measuredAt: size.measuredAt } : null;
+if (size && js) gates.push({ id: 'size', label: 'JS budgets', status: size.results.every((r) => r.passed) ? 'pass' : 'block', value: `${js.preLcpKb} kB pre-LCP, ${js.totalKb} kB total`, measuredAt: size.measuredAt });
+
+// pages: every static route in src/pages plus every published case study
+const walk = (dir: string): string[] => readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? walk(join(dir, f)) : [join(dir, f)]));
+const staticPages = walk('src/pages').filter((f) => f.endsWith('.astro') && !/\[/.test(f)).length;
+const caseStudies = readdirSync('src/content/work').filter((f) => f.endsWith('.mdx') && !/^draft:\s*true\s*$/m.test(readFileSync(join('src/content/work', f), 'utf8').match(/^---\n([\s\S]*?)\n---/)?.[1] ?? '')).length;
+const pages = staticPages + caseStudies;
+gates.push({ id: 'build', label: 'Build', status: 'pass', value: `${pages} pages` });
+
+const gate: Status = gates.every((g) => g.status === 'pass') ? 'pass' : 'block'; // honest: any failing or unverified check = BLOCK
 
 mkdirSync('src/generated', { recursive: true });
 writeFileSync('src/generated/build.json', JSON.stringify({
   commit,
-  date: new Date().toISOString().slice(0, 10),
-  gate: report.problems.length === 0 ? 'pass' : 'block', // honest: unverified claims = BLOCK
-  log: log.length ? log : [{ hash: commit, date: new Date().toISOString().slice(0, 10), subject: 'Initial scaffold' }],
+  date: today,
+  gate,
+  gates,
+  pages,
+  tests: testsInfo,
+  js,
+  log: log.length ? log : [{ hash: commit, date: today, subject: 'Initial scaffold' }],
 }, null, 2));
-console.log(`manifest: ${commit}, gate ${report.problems.length === 0 ? 'pass' : 'block'}`);
+console.log(`manifest: ${commit}, gate ${gate}, ${gates.length} checks, ${pages} pages`);
