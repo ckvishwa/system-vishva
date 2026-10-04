@@ -64,3 +64,37 @@ test('reduced motion: no canvas in the DOM', async ({ browser }) => {
   await expect(page.locator('canvas')).toHaveCount(0);
   await ctx.close();
 });
+
+test('record -> case study runs the waveform transition and leaves nothing behind', async ({ page }) => {
+  await instrument(page);
+  await page.goto('/');
+  await live(page);
+  const started = await page.evaluate(() => {
+    const w = window as any;
+    w.__vt = 0;
+    const orig = document.startViewTransition.bind(document);
+    document.startViewTransition = (...a: any[]) => { w.__vt++; return (orig as any)(...a); };
+    return typeof orig === 'function';
+  });
+  expect(started).toBe(true);
+  const t0 = Date.now();
+  await page.locator('a.record[href="/work/rexi/"]').click();
+  await expect(page).toHaveURL(/\/work\/rexi\/$/);
+  await expect(page.locator('html')).not.toHaveAttribute('data-sig', /.+/, { timeout: 3000 });
+  expect(Date.now() - t0).toBeLessThan(1500);
+  expect(await page.evaluate(() => (window as any).__vt)).toBeGreaterThan(0);
+  await expect(page.locator('svg[style*="sig-line"]')).toHaveCount(0);
+  await expect(page.locator('.is-glitching')).toHaveCount(0);
+  await expect(page.locator('h1')).toHaveText('Rexi');
+});
+
+test('reduced motion: navigation is an instant swap with no overlay', async ({ browser }) => {
+  const ctx = await browser.newContext({ reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  await page.goto('/');
+  await page.locator('a.record[href="/work/rexi/"]').click();
+  await expect(page).toHaveURL(/\/work\/rexi\/$/);
+  await expect(page.locator('html')).not.toHaveAttribute('data-sig', /.+/);
+  await expect(page.locator('svg[style*="sig-line"]')).toHaveCount(0);
+  await ctx.close();
+});

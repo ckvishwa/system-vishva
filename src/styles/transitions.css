@@ -1,0 +1,39 @@
+/*
+ * Page transitions (ARD §7 idea 4). Only applies while <html data-sig> is set by
+ * engine/transitions, i.e. a record -> case-study navigation with a known signature.
+ * Phases: form 180 ms (JS, outgoing page) -> morph 280 ms (below) -> resolve 200 ms (traces draw).
+ * Durations mirror TIMING in engine/transitions/signatures.ts; tests keep them in sync.
+ */
+
+/* Reduced motion / tier C: instant swap, no pseudo-element animation at all. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+html[data-tier='C']::view-transition-group(*),
+html[data-tier='C']::view-transition-old(*),
+html[data-tier='C']::view-transition-new(*) { animation: none !important; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The waveform line morphs into the architecture diagram: geometry moves, the image swaps. */
+  html[data-sig]::view-transition-group(sig-line) { animation-duration: 280ms; animation-timing-function: var(--e-inout); }
+  html[data-sig]::view-transition-old(sig-line) { animation: sig-fade-out 140ms linear 140ms both; }
+  html[data-sig]::view-transition-new(sig-line) { animation: sig-fade-in 140ms linear 140ms both; }
+
+  /* Resolve: the diagram's connectors draw in fast, so the signal visibly becomes the pipeline. */
+  html[data-sig] .arch .trace { transition-duration: 200ms; }
+
+  /* Glitch (change): 3 held frames of slice offset on the outgoing title, then it is gone. Never loops. */
+  html[data-sig]::view-transition-group(sig-title) { animation-duration: 280ms; animation-timing-function: var(--e-inout); }
+  html[data-sig]::view-transition-old(sig-title) { animation: sig-glitch 120ms both, sig-fade-out 1ms linear 120ms both; }
+  html[data-sig]::view-transition-new(sig-title) { animation: sig-fade-in 160ms linear 120ms both; }
+  html[data-sig] .is-glitching { text-shadow: 1px 0 var(--c-risk), -1px 0 var(--c-info); }
+}
+
+@keyframes sig-fade-out { to { opacity: 0; } }
+@keyframes sig-fade-in { from { opacity: 0; } }
+@keyframes sig-glitch {
+  0%     { transform: translateX(0);    clip-path: inset(0);         animation-timing-function: step-end; }
+  33.3%  { transform: translateX(-6px); clip-path: inset(0 0 55% 0); animation-timing-function: step-end; }
+  66.6%  { transform: translateX(5px);  clip-path: inset(40% 0 0 0); animation-timing-function: step-end; }
+  100%   { transform: none;             clip-path: inset(0); }
+}

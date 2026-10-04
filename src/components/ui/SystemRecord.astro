@@ -1,11 +1,11 @@
 ---
 // Horizontal project record (plan 1 §5). Hover/focus exposes the pipeline underneath.
-interface Props { index: number; slug: string; title: string; category: string; pipeline: string[]; metrics: string[] }
-const { index, slug, title, category, pipeline, metrics } = Astro.props;
+interface Props { index: number; slug: string; title: string; category: string; pipeline: string[]; metrics: string[]; signature?: string }
+const { index, slug, title, category, pipeline, metrics, signature } = Astro.props;
 ---
-<a class="record" href={`/work/${slug}/`} data-cursor="open">
+<a class="record" href={`/work/${slug}/`} data-cursor="open" data-sig={signature}>
   <span class="idx mono muted">{String(index).padStart(2, '0')}</span>
-  <span class="title h1" transition:name={`title-${slug}`}>{title}</span>
+  <span class="title h1" transition:name={`title-${slug}`} data-sig-title>{title}</span>
   <span class="cat">{category}</span>
   <span class="metrics mono">{metrics.join('   ')}</span>
   <ol class="pipe mono" aria-label={`${title} pipeline`}>

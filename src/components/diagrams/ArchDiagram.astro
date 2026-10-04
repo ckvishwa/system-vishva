@@ -5,7 +5,7 @@ const { nodes, id } = Astro.props;
 const W = 168, H = 56, GAP = 40, PAD = 2;
 const width = nodes.length * W + (nodes.length - 1) * GAP + PAD * 2;
 ---
-<div class="arch" data-reveal>
+<div class="arch" data-reveal data-sig-target>
   <svg viewBox={`0 0 ${width} ${H + PAD * 2}`} role="img" aria-labelledby={`arch-${id}`}>
     <title id={`arch-${id}`}>{nodes.join(' then ')}</title>
     {nodes.map((n, i) => {

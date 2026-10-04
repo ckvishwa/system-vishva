@@ -5,6 +5,7 @@ import '../styles/global.css';
 import { ClientRouter } from 'astro:transitions';
 import Nav from '../components/ui/Nav.astro';
 import StatusBar from '../components/ui/StatusBar.astro';
+import Transitions from '../islands/Transitions.astro';
 
 interface Props { title: string; description?: string; motion?: boolean }
 const { title, description = 'AI systems engineering with security and reliability as first-class constraints.', motion = true } = Astro.props;
@@ -48,5 +49,6 @@ const fullTitle = title === 'Home' ? 'Vishva Teja Chikoti — AI systems, securi
     <Nav />
     <main id="main"><slot /></main>
     <StatusBar />
+    <Transitions />
   </body>
 </html>

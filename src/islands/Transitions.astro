@@ -1,0 +1,8 @@
+---
+// Registers page-transition signatures with the ClientRouter (engine/transitions). No markup.
+---
+<script>
+  import { initTransitions } from '../engine/transitions';
+  // Layout scripts run once per document; the listeners they add persist across client-side navigations.
+  initTransitions();
+</script>

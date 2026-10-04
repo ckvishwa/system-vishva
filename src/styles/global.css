@@ -1,6 +1,7 @@
 @import './tokens.css';
 @import './type.css';
 @import './motion.css';
+@import './transitions.css';
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { background: var(--c-bg); color: var(--c-text); -webkit-text-size-adjust: 100%; color-scheme: dark; }

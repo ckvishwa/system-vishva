@@ -28,7 +28,7 @@ const lab = await getCollection('lab');
   <section id="systems" class="wrap block" aria-labelledby="sel">
     <h2 id="sel" class="mono muted">Selected systems</h2>
     {records.map(({ w, metrics }, i) => (
-      <SystemRecord index={i + 1} slug={w.id} title={w.data.title} category={w.data.category} pipeline={w.data.pipeline} metrics={metrics} />
+      <SystemRecord index={i + 1} slug={w.id} title={w.data.title} category={w.data.category} pipeline={w.data.pipeline} metrics={metrics} signature={w.data.signature} />
     ))}
   </section>
 
