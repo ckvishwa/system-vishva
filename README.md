@@ -5,7 +5,7 @@ Portfolio of Vishva Teja Chikoti. AI systems engineering with security and relia
 ```bash
 npm install
 npm run dev        # http://localhost:4321
-npm test           # engine unit tests (tier, scheduler, gyro)
+npm test           # engine unit tests
 npm run build      # verify-claims → build-manifest → astro build
 npm run gate       # what CI runs: strict claims + build + budgets + tests
 ```
@@ -24,4 +24,13 @@ Only `src/islands/` hydrates. The site has one frame loop: `src/engine/scheduler
 - [x] Static pages: home, work, case study, lab, about, contact, plain, logs, 404
 - [ ] Fill evidence links in claims.yaml (status bar shows GATE: BLOCK until then — on purpose)
 - [ ] Real domain in astro.config.mjs, email/LinkedIn in contact.astro
-- [ ] Phase 1: SystemScene.ts (Three.js), ScrollStory island, Rexi storyboard
+## Phase 1 status
+
+- [x] WebGL hero (SystemScene, one canvas, render on demand, tier A/B only), cross-fade from the static SVG
+- [x] Waveform page transition, reusable signature registry (MalTrace 'hash' plugs in later)
+- [x] Rexi scroll story (ScrollStory island, GSAP lazy-loaded on case studies only)
+- [x] Atmosphere layer, ADR-0012 (parallax, redaction, decrypt, glitch in transitions, HUD, grain)
+- [ ] Rexi beat 5 needs captured interpreter outputs: src/content/work/rexi/README.md
+- [ ] Phase 1 hand tests on a real Android phone and iPhone (see the Phase 1 report)
+
+`npm run test:e2e` needs a browser. If Playwright cannot download its own, run `PW_CHANNEL=chrome npm run test:e2e`.
