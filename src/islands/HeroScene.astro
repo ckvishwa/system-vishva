@@ -18,6 +18,13 @@ const graph = JSON.stringify({ nodes: g.nodes, edges: g.edges });
       <span class="node mono" style={`left:${n.x}%;top:${n.y}%`} data-node={n.id}><i></i><span class="lbl">{n.label}</span></span>
     ))}
   </div>
+  <!-- HUD (ADR-0012 E6): real session time, pointer and route. Static text until the hero script updates it; hidden in tier C. -->
+  <div class="hud mono" data-hud>
+    <i class="br tl"></i><i class="br tr"></i><i class="br bl"></i><i class="br brr"></i>
+    <span class="hud-prompt" data-hud-prompt>vishva@system:~$</span>
+    <span class="hud-tc" data-hud-time>00:00:00:00</span>
+    <span class="hud-xy" data-hud-xy></span>
+  </div>
 </div>
 <button type="button" class="depth-chip mono" data-depth-chip hidden>Enable depth</button>
 <script>
@@ -55,7 +62,19 @@ const graph = JSON.stringify({ nodes: g.nodes, edges: g.edges });
   .edges, .node i { transition: opacity var(--d-3) var(--e-out); }
   .is-live :global(#system-environment) { opacity: 1; }
   .is-live .edges, .is-live .node i { opacity: 0; }
-  .depth-chip { position: absolute; right: var(--gutter); top: var(--s-4); z-index: var(--z-content); background: transparent; color: var(--c-text); border: 1px solid var(--c-rule); border-radius: var(--r-1); padding: var(--s-2) var(--s-3); font-size: 12px; cursor: pointer; }
+  .hud { position: absolute; inset: var(--s-4) var(--gutter); color: var(--c-muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+  :global(html[data-tier='C']) .hud { display: none; }
+  .br { position: absolute; width: 14px; height: 14px; border: 0 solid var(--c-muted); }
+  .tl { top: 0; left: 0; border-width: 1px 0 0 1px; }
+  .tr { top: 0; right: 0; border-width: 1px 1px 0 0; }
+  .bl { bottom: 0; left: 0; border-width: 0 0 1px 1px; }
+  .brr { bottom: 0; right: 0; border-width: 0 1px 1px 0; }
+  .hud-prompt { position: absolute; top: 22px; left: 22px; }
+  .hud-tc { position: absolute; top: 22px; right: 22px; }
+  .hud-xy { position: absolute; top: 38px; right: 22px; white-space: pre; }
+  :global(html:not([data-fx='armed'])) .hud-xy { display: none; }
+  @media (pointer: coarse) { .hud-xy { display: none; } }
+  .depth-chip { position: absolute; right: var(--gutter); bottom: var(--s-5); z-index: var(--z-content); background: transparent; color: var(--c-text); border: 1px solid var(--c-rule); border-radius: var(--r-1); padding: var(--s-2) var(--s-3); font-size: 12px; cursor: pointer; }
   .depth-chip:hover { border-color: var(--c-system); color: var(--c-system); }
   .depth-chip[hidden] { display: none; }
   @media (max-width: 720px) { .node { font-size: 10px; } }

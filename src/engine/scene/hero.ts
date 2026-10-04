@@ -10,6 +10,7 @@ import { trackGyro, needsPermission, requestGyro } from '../input/gyro';
 import { trackScroll } from '../input/scroll';
 import { onVisible } from '../input/visibility';
 import { createParallax, DEPTH } from '../fx/parallax';
+import { createHud } from '../fx/hud';
 import type { GraphData } from './graph';
 import type { SceneHandle } from './SystemScene';
 
@@ -39,13 +40,16 @@ export function mountHero(root: HTMLElement, tier: Tier): () => void {
 
   const layers = [...root.querySelectorAll<HTMLElement>('[data-depth]')].map((el) => ({ el, depth: Number(el.dataset.depth) || DEPTH.graph }));
   const parallax = createParallax(layers);
+  const hudEl = root.querySelector<HTMLElement>('[data-hud]');
+  const hud = hudEl ? createHud(hudEl) : null;
   const wake = () => { if (visible) sched.invalidate(ID); };
   const scrollProgress = () => Math.min(1, scrollY / Math.max(1, hero.offsetHeight));
 
-  sched.add(ID, (dt) => {
+  sched.add(ID, (dt, now) => {
     if (!visible || disposed) return false;
     const a = scene ? scene.frame(dt) : false;
     const b = parallax.step(dt);
+    hud?.tick(now);
     if (scene && !live) {
       live = true;
       canvas.hidden = false;
@@ -55,7 +59,12 @@ export function mountHero(root: HTMLElement, tier: Tier): () => void {
     return a || b;
   });
 
-  offs.push(trackPointer((x, y) => { parallax.setPointer(x, y); scene?.setPointer(x, y); wake(); }));
+  offs.push(trackPointer((x, y) => {
+    parallax.setPointer(x, y);
+    scene?.setPointer(x, y);
+    hud?.setPointer(Math.round(((x + 1) / 2) * innerWidth), Math.round(((y + 1) / 2) * innerHeight));
+    wake();
+  }));
   offs.push(trackScroll(() => { parallax.setScroll(scrollProgress()); scene?.boundsChanged(); wake(); }));
   offs.push(onVisible(hero, (v) => { visible = v; if (v) wake(); }));
 
