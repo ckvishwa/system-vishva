@@ -1,7 +1,7 @@
 /*
  * Page transitions (ARD §7 idea 4). Only applies while <html data-sig> is set by
  * engine/transitions, i.e. a record -> case-study navigation with a known signature.
- * Phases: form 180 ms (JS, outgoing page) -> morph 280 ms (below) -> resolve 200 ms (traces draw).
+ * Phases: form 180 ms (JS, outgoing page) -> morph 280 ms (below). 460 ms in total.
  * Durations mirror TIMING in engine/transitions/signatures.ts; tests keep them in sync.
  */
 
@@ -18,9 +18,6 @@ html[data-tier='C']::view-transition-new(*) { animation: none !important; }
   html[data-sig]::view-transition-group(sig-line) { animation-duration: 280ms; animation-timing-function: var(--e-inout); }
   html[data-sig]::view-transition-old(sig-line) { animation: sig-fade-out 140ms linear 140ms both; }
   html[data-sig]::view-transition-new(sig-line) { animation: sig-fade-in 140ms linear 140ms both; }
-
-  /* Resolve: the diagram's connectors draw in fast, so the signal visibly becomes the pipeline. */
-  html[data-sig] .arch .trace { transition-duration: 200ms; }
 
   /* Glitch (change): 3 held frames of slice offset on the outgoing title, then it is gone. Never loops. */
   html[data-sig]::view-transition-group(sig-title) { animation-duration: 280ms; animation-timing-function: var(--e-inout); }

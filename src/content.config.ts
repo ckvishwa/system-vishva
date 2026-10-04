@@ -26,6 +26,12 @@ const work = defineCollection({
     stack: z.array(z.string()),
     pipeline: z.array(z.string()).min(2), // nodes for the hover architecture + ArchDiagram
     claimIds: z.array(z.string()).default([]),
+    // Scroll story (docs/storyboards/<slug>.md): pipeline groups, 1-based as printed on the diagram.
+    // Nodes after the last group are lit by that group. `proposal` marks nodes whose output is only a proposal.
+    story: z.array(z.object({
+      nodes: z.tuple([z.number().int().min(1), z.number().int().min(1)]),
+      proposal: z.array(z.number().int().min(1)).default([]),
+    })).optional(),
     signature: z.enum(['waveform', 'hash', 'stream', 'stamp']), // ARD §7 idea 4
     repo: z.url().optional(),
     draft: z.boolean().default(false),

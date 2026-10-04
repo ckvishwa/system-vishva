@@ -1,4 +1,4 @@
 [
-  { "name": "pre-LCP JS (all pages, excl. three/gsap)", "path": "dist/_astro/!(three*|gsap*|SystemScene*|scroll*)*.js", "gzip": true, "limit": "60 KB" },
+  { "name": "pre-LCP JS (all pages, excl. three/gsap)", "path": "dist/_astro/!(three*|gsap*|ScrollTrigger*|SystemScene*|scroll*)*.js", "gzip": true, "limit": "60 KB" },
   { "name": "home total incl. three", "path": "dist/_astro/*.js", "gzip": true, "limit": "250 KB" }
 ]

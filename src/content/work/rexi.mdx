@@ -7,15 +7,16 @@ stack: [LiveKit, SIP, Python, LLM tool calling, Postgres]
 pipeline: [Call, VAD, STT, Interpreter, FSM, Pricing, Confirm, POS]
 claimIds: [rexi-tests, rexi-pricing-parity, rexi-golden-evals]
 signature: waveform
+story:
+  - { nodes: [1, 3] }                 # beat 2: Call, VAD, STT
+  - { nodes: [4, 6], proposal: [4] }   # beat 3: Interpreter (proposal), FSM, Pricing
 ---
 
 ## The problem
 
-LLMs are good at language. They are bad places to store business truth.
+<p class="cause" data-beat="cause">LLMs are good at language. They are bad places to store business truth.</p>
 
 ## The boundary
 
 The model reads the caller and proposes an intent. The server owns everything that can be wrong in a
 way that costs money: menu validation, price calculation, cart mutation, quote generation and confirmation.
-
-{/* Phase 1: replace with storyboard beats from docs/storyboards/rexi.md */}

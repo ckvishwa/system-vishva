@@ -1,7 +1,10 @@
 ---
 // Static SVG pipeline, zero JS (ARD D-05). Paths use pathLength="1" so .trace can draw them.
-interface Props { nodes: string[]; id: string }
-const { nodes, id } = Astro.props;
+// Nodes carry data-node / connectors data-trace so the scroll story can switch them; with no JS
+// (or tier C) every node and connector is simply in its final, visible state.
+// `proposal` = 1-based node numbers whose output is only a proposal (drawn dashed and muted, never "pass" green).
+interface Props { nodes: string[]; id: string; proposal?: number[] }
+const { nodes, id, proposal = [] } = Astro.props;
 const W = 168, H = 56, GAP = 40, PAD = 2;
 const width = nodes.length * W + (nodes.length - 1) * GAP + PAD * 2;
 ---
@@ -10,12 +13,16 @@ const width = nodes.length * W + (nodes.length - 1) * GAP + PAD * 2;
     <title id={`arch-${id}`}>{nodes.join(' then ')}</title>
     {nodes.map((n, i) => {
       const x = PAD + i * (W + GAP);
+      const isProposal = proposal.includes(i + 1);
       return (
         <g>
-          <rect x={x} y={PAD} width={W} height={H} fill="none" stroke="var(--c-rule)" />
-          <text x={x + 14} y={PAD + 22} class="i">{String(i + 1).padStart(2, '0')}</text>
-          <text x={x + 14} y={PAD + 42} class="n">{n}</text>
-          {i < nodes.length - 1 && <path class="trace" pathLength="1" d={`M${x + W} ${PAD + H / 2}H${x + W + GAP}`} />}
+          <g class:list={['node', { 'is-proposal': isProposal }]} data-node={i}>
+            <rect x={x} y={PAD} width={W} height={H} fill="none" stroke="var(--c-rule)" />
+            <text x={x + 14} y={PAD + 22} class="i">{String(i + 1).padStart(2, '0')}</text>
+            <text x={x + 14} y={PAD + 42} class="n">{n}</text>
+            {isProposal && <text x={x + W - 14} y={PAD + 22} class="i tag" text-anchor="end">proposal</text>}
+          </g>
+          {i < nodes.length - 1 && <path class="trace" data-trace={i} pathLength="1" d={`M${x + W} ${PAD + H / 2}H${x + W + GAP}`} />}
         </g>
       );
     })}
@@ -27,4 +34,10 @@ const width = nodes.length * W + (nodes.length - 1) * GAP + PAD * 2;
   .i { font: 500 11px var(--f-mono); fill: var(--c-muted); }
   .n { font: 600 15px var(--f-sans); fill: var(--c-text); }
   .trace { stroke: var(--c-system); stroke-width: 1.5; fill: none; }
+  .node { transition: opacity var(--d-2) var(--e-out); }
+  .node.is-active rect { stroke: var(--c-system); }
+  /* A proposal is not authoritative: dashed, muted, and it never turns the pass colour. */
+  .node.is-proposal rect { stroke-dasharray: 4 3; }
+  .node.is-proposal.is-active rect { stroke: var(--c-muted); }
+  .node.is-proposal .n { fill: var(--c-muted); }
 </style>

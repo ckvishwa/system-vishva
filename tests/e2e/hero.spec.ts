@@ -98,3 +98,51 @@ test('reduced motion: navigation is an instant swap with no overlay', async ({ b
   await expect(page.locator('svg[style*="sig-line"]')).toHaveCount(0);
   await ctx.close();
 });
+
+test('rexi scroll story lights the pipeline in order, and back again', async ({ page }) => {
+  await instrument(page);
+  await page.goto('/work/rexi/');
+  const state = () => page.evaluate(() => [...document.querySelectorAll('[data-node]')].map((n) => (n.classList.contains('is-active') ? '1' : '0')).join(''));
+  await page.waitForTimeout(500);
+  expect(await state()).toMatch(/^1?0+$/); // at the top at most the first node is on
+  const lit = async () => (await state()).split('1').length - 1;
+  let prev = 0;
+  for (const y of [300, 500, 700, 900]) {
+    await page.evaluate((top) => scrollTo(0, top), y);
+    await page.waitForTimeout(400);
+    const s = await state();
+    expect(s, `y=${y}`).toMatch(/^1*0*$/); // always a contiguous prefix: never out of order
+    const n = await lit();
+    expect(n).toBeGreaterThanOrEqual(prev);
+    prev = n;
+  }
+  await page.evaluate(() => scrollTo(0, 1500));
+  await expect.poll(state).toBe('11111111');
+  await page.evaluate(() => scrollTo(0, 0));
+  await expect.poll(state).toMatch(/^1?0+$/);
+});
+
+test('rexi story: reduced motion shows the final state, with all content in the HTML', async ({ browser }) => {
+  const ctx = await browser.newContext({ reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  await page.goto('/work/rexi/');
+  await page.waitForTimeout(800);
+  const nodes = await page.evaluate(() => [...document.querySelectorAll('[data-node]')].map((n) => getComputedStyle(n).opacity));
+  expect(nodes).toHaveLength(8);
+  nodes.forEach((o) => expect(o).toBe('1'));
+  const traces = await page.evaluate(() => [...document.querySelectorAll('[data-trace]')].map((n) => getComputedStyle(n).strokeDashoffset));
+  traces.forEach((o) => expect(parseFloat(o)).toBe(0));
+  await expect(page.getByText('LLMs are good at language.')).toBeVisible();
+  await expect(page.getByText('323+')).toBeVisible();
+  await ctx.close();
+});
+
+test('rexi metrics count up and land on the exact text already in the HTML', async ({ page }) => {
+  await instrument(page);
+  await page.goto('/work/rexi/');
+  const before = await page.locator('[data-count]').allTextContents();
+  await page.evaluate(() => scrollTo(0, document.body.scrollHeight));
+  await page.waitForTimeout(2000);
+  expect(await page.locator('[data-count]').allTextContents()).toEqual(before);
+  expect(before).toEqual(['323+', '50/50', '71']);
+});

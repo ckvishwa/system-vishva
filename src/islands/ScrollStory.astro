@@ -1,0 +1,92 @@
+---
+// Case-study scroll story (docs/storyboards/<slug>.md). Every beat is real HTML in reading order;
+// the script only toggles classes (GSAP ScrollTrigger decides when). With no JS, reduced motion or tier C
+// the page is simply the finished diagram, the prose and the metrics.
+import ArchDiagram from '../components/diagrams/ArchDiagram.astro';
+import ClaimRef from '../components/evidence/ClaimRef.astro';
+
+interface Props { id: string; pipeline: string[]; story?: { nodes: [number, number]; proposal: number[] }[]; claims: any[] }
+const { id, pipeline, story = [], claims } = Astro.props;
+const hasStory = story.length > 0;
+const proposal = story.flatMap((g) => g.proposal);
+const range = (g: { nodes: [number, number] }) => `${g.nodes[0]}-${g.nodes[1]}`;
+const two = (n: number) => String(n).padStart(2, '0');
+// Nodes after the last group are lit by the last group, so its caption covers them too.
+const caption = (g: { nodes: [number, number]; proposal: number[] }, last: boolean) => {
+  const end = last ? pipeline.length : g.nodes[1];
+  return pipeline.slice(g.nodes[0] - 1, end).map((n, k) => ({ n, no: g.nodes[0] + k, proposal: g.proposal.includes(g.nodes[0] + k) }));
+};
+---
+<div class="story" data-story={hasStory ? id : undefined}>
+  <div class="pipeline">
+    <section class="wrap stage" aria-label="Architecture">
+      <ArchDiagram nodes={pipeline} id={id} proposal={proposal} />
+    </section>
+    {hasStory && story.map((g, i) => (
+      <section class="wrap beat" data-beat={g.proposal.length ? 'dependency' : 'flow'} data-nodes={range(g)} aria-label={`Pipeline stages ${two(g.nodes[0])} to ${two(i === story.length - 1 ? pipeline.length : g.nodes[1])}`}>
+        <ol class="steps mono">
+          {caption(g, i === story.length - 1).map((s) => (
+            <li><span class="muted">{two(s.no)}</span> {s.n}{s.proposal && <span class="muted"> (proposal)</span>}</li>
+          ))}
+        </ol>
+      </section>
+    ))}
+  </div>
+
+  {!hasStory && claims.length > 0 && (
+    <section class="wrap metrics" aria-label="Measured results">
+      {claims.map((c: any) => <ClaimRef claim={c} />)}
+    </section>
+  )}
+
+  <section class="wrap prose body"><slot /></section>
+
+  {hasStory && (
+    <section class="wrap" data-beat="change" data-placeholder aria-label="Model proposal against server authorization">
+      <div class="boundary">
+        <p class="mono">PLACEHOLDER</p>
+        <p>Real captured interpreter outputs go here, each stamped VALIDATED or REJECTED by the server.</p>
+        <p class="mono muted">TODO: awaiting captured logs. Format and location: src/content/work/{id}/README.md</p>
+      </div>
+    </section>
+  )}
+
+  {hasStory && claims.length > 0 && (
+    <section class="wrap metrics" data-beat="state" aria-label="Measured results">
+      {claims.map((c: any) => <ClaimRef claim={c} />)}
+    </section>
+  )}
+</div>
+<script>
+  import { reducedMotion } from '../engine/motion/tokens';
+
+  let stop: (() => void) | null = null;
+  const release = () => { stop?.(); stop = null; };
+
+  // GSAP is lazy-imported by engine/motion/scroll.ts, only here, only on pages that have a story.
+  document.addEventListener('astro:page-load', async () => {
+    release();
+    const root = document.querySelector<HTMLElement>('[data-story]');
+    if (!root || reducedMotion()) return;
+    try {
+      const { initScrollStory } = await import('../engine/motion/scroll');
+      stop = await initScrollStory(root);
+    } catch {
+      root.dataset.storyFailed = ''; // back to the finished state, never a half-dimmed diagram
+    }
+  });
+  document.addEventListener('astro:before-swap', release);
+</script>
+<style>
+  .stage { position: sticky; top: 56px; z-index: var(--z-content); background: var(--c-bg); }
+  .beat { min-height: 60vh; display: grid; align-content: center; }
+  .steps { list-style: none; display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-6); font-size: var(--t-sm); }
+  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); border-top: 1px solid var(--c-rule); margin-block: var(--s-7); }
+  .body { padding-block: var(--s-7); }
+  .body :global(h2) { font-size: var(--t-xl); margin-block: var(--s-7) var(--s-3); letter-spacing: -0.02em; }
+  .body :global(p) { margin-bottom: var(--s-4); color: var(--c-text); }
+  /* Beat 4 (cause): a hard cut, no motion. */
+  .body :global(.cause) { font-size: var(--t-xl); line-height: 1.1; letter-spacing: -0.02em; font-weight: 600; max-width: 22ch; margin-block: var(--s-8); }
+  .boundary { display: grid; gap: var(--s-3); padding-block: var(--s-6); margin-block: var(--s-7); border: 1px dashed var(--c-info); max-width: 68ch; }
+  .boundary .mono:first-child { color: var(--c-info); }
+</style>

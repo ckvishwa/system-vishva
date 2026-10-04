@@ -12,8 +12,8 @@ import { EASE } from '../motion/tokens';
 export type SignatureId = 'waveform' | 'hash' | 'stream' | 'stamp';
 
 /** Phase budget in ms. transitions.css repeats `morph`; a test keeps them in sync. Total stays under 700. */
-export const TIMING = { form: 180, morph: 280, resolve: 200 } as const;
-export const TOTAL_MS = TIMING.form + TIMING.morph + TIMING.resolve;
+export const TIMING = { form: 180, morph: 280 } as const;
+export const TOTAL_MS = TIMING.form + TIMING.morph;
 
 export const LINE_NAME = 'sig-line';
 export const TITLE_NAME = 'sig-title';

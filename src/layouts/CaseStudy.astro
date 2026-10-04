@@ -1,7 +1,6 @@
 ---
 import Base from './Base.astro';
-import ArchDiagram from '../components/diagrams/ArchDiagram.astro';
-import ClaimRef from '../components/evidence/ClaimRef.astro';
+import ScrollStory from '../islands/ScrollStory.astro';
 import { getEntries } from 'astro:content';
 
 interface Props { entry: any }
@@ -17,19 +16,9 @@ const claims = d.claimIds.length ? await getEntries(d.claimIds.map((id: string) 
       <p class="h2 thesis">{d.thesis}</p>
     </header>
 
-    <section class="wrap" aria-label="Architecture">
-      <ArchDiagram nodes={d.pipeline} id={entry.id} />
-    </section>
-
-    {claims.length > 0 && (
-      <section class="wrap metrics" aria-label="Measured results">
-        {claims.map((c: any) => <ClaimRef claim={c} />)}
-      </section>
-    )}
-
-    <section class="wrap prose body" data-story>
+    <ScrollStory id={entry.id} pipeline={d.pipeline} story={d.story} claims={claims}>
       <slot />
-    </section>
+    </ScrollStory>
 
     <p class="wrap mono"><a href="/work/">Back to all work</a></p>
   </article>
@@ -38,8 +27,4 @@ const claims = d.claimIds.length ? await getEntries(d.claimIds.map((id: string) 
 <style>
   .case-head { padding-block: var(--s-9) var(--s-7); display: grid; gap: var(--s-4); }
   .thesis { max-width: 22ch; color: var(--c-muted); }
-  .metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); border-top: 1px solid var(--c-rule); margin-block: var(--s-7); }
-  .body { padding-block: var(--s-7); }
-  .body :global(h2) { font-size: var(--t-xl); margin-block: var(--s-7) var(--s-3); letter-spacing: -0.02em; }
-  .body :global(p) { margin-bottom: var(--s-4); color: #cfcfcf; }
 </style>

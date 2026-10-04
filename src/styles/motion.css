@@ -13,9 +13,15 @@
   transition: clip-path var(--d-3) var(--e-out);
 }
 
-/* Line tracing: SVG paths with pathLength="1" */
-.trace { stroke-dasharray: 1; stroke-dashoffset: 1; }
-.is-revealed .trace { stroke-dashoffset: 0; transition: stroke-dashoffset var(--d-4) var(--e-inout); }
+/* Line tracing: SVG paths with pathLength="1". The default is the FINAL state (drawn), so no-JS,
+   reduced motion and tier C always see the complete diagram; scripts draw it only when armed. */
+.trace { stroke-dasharray: 1; stroke-dashoffset: 0; transition: stroke-dashoffset var(--d-3) var(--e-inout); }
+
+/* Scroll story arming (ScrollStory island). Tier is decided before first paint, and tier C is also the
+   no-JS default, so the "not yet" state exists only where the story script will run. If the script
+   fails it sets data-story-failed and everything returns to the final state. */
+html:not([data-tier='C']) [data-story]:not([data-story-failed]) .node:not(.is-active) { opacity: 0.3; }
+html:not([data-tier='C']) [data-story]:not([data-story-failed]) .trace:not(.is-drawn) { stroke-dashoffset: 1; }
 
 /* Tier C / reduced motion: final state, no movement (ARD §8 hard gate) */
 @media (prefers-reduced-motion: reduce) {
