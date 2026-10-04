@@ -5,13 +5,15 @@ export function countUp(el: HTMLElement): void {
   const target = Number(el.dataset.value);
   if (!Number.isFinite(target) || reducedMotion()) return;
   const fmt = new Intl.NumberFormat('en-US');
+  const final = el.textContent ?? ''; // what the HTML already says, e.g. "323+" or "50/50"
+  const suffix = el.dataset.suffix ?? final.replace(/^[\d,.]+/, '');
   const dur = Math.min(DURATION.d4, 800);
   let t = 0;
   const id = `count-${Math.random().toString(36).slice(2)}`;
   scheduler().add(id, (dt) => {
     t = Math.min(dur, t + dt);
     const p = 1 - Math.pow(1 - t / dur, 3);
-    el.textContent = fmt.format(Math.round(target * p)) + (el.dataset.suffix ?? '');
+    el.textContent = t >= dur ? final : fmt.format(Math.round(target * p)) + suffix;
     if (t >= dur) { scheduler().remove(id); return false; }
     return true;
   });
