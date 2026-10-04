@@ -37,6 +37,8 @@ const fullTitle = title === 'Home' ? 'Vishva Teja Chikoti — AI systems, securi
         else if (m('(pointer: coarse)')) t = 'B';
         else if (cores >= 8 && (mem === null || mem >= 8)) t = 'A';
         document.documentElement.dataset.tier = t;
+        // ClientRouter swaps <html> attributes with the incoming page's (default "C"); carry the decided tier across.
+        document.addEventListener('astro:before-swap', (e) => { e.newDocument.documentElement.dataset.tier = t; });
       })();
     </script>
     {motion && <ClientRouter fallback="swap" />}

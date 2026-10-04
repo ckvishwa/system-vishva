@@ -1,32 +1,60 @@
 ---
-// The ONE WebGL canvas (ARD D-06). Phase 0: static SVG graph (= tier C, and first paint for all tiers).
-// Phase 1: the script below lazy-loads engine/scene/SystemScene.ts after LCP for tiers A/B.
+// The ONE WebGL canvas (ARD D-06). The static SVG is tier C and first paint for every tier;
+// engine/scene/hero.ts lazy-loads SystemScene (and Three.js) after load for tiers A/B and
+// cross-fades to the canvas once its first frame has rendered.
 import { parse } from 'yaml';
 import raw from '../content/systems-graph.yaml?raw';
 const g = parse(raw) as { nodes: { id: string; label: string; x: number; y: number }[]; edges: [string, string][] };
 const pos = Object.fromEntries(g.nodes.map((n) => [n.id, n]));
+const graph = JSON.stringify({ nodes: g.nodes, edges: g.edges });
 ---
-<div class="hero-scene" aria-hidden="true">
-  <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="edges">
-    {g.edges.map(([a, b]) => <line x1={pos[a].x} y1={pos[a].y} x2={pos[b].x} y2={pos[b].y} vector-effect="non-scaling-stroke" />)}
-  </svg>
-  {g.nodes.map((n) => (
-    <span class="node mono" style={`left:${n.x}%;top:${n.y}%`} data-node={n.id}><i></i>{n.label}</span>
-  ))}
-  <canvas id="system-environment" hidden></canvas>
+<div class="hero-scene" aria-hidden="true" data-graph={graph}>
+  <div class="hero-grid grid-bg" data-depth="0.2"></div>
+  <div class="plot" data-depth="0.5">
+    <svg class="edges" viewBox="0 0 100 100" preserveAspectRatio="none">
+      {g.edges.map(([a, b]) => <line x1={pos[a].x} y1={pos[a].y} x2={pos[b].x} y2={pos[b].y} vector-effect="non-scaling-stroke" />)}
+    </svg>
+    {g.nodes.map((n) => (
+      <span class="node mono" style={`left:${n.x}%;top:${n.y}%`} data-node={n.id}><i></i><span class="lbl">{n.label}</span></span>
+    ))}
+  </div>
 </div>
+<button type="button" class="depth-chip mono" data-depth-chip hidden>Enable depth</button>
 <script>
   import { currentTier } from '../engine/tier';
-  // Phase 1: if (currentTier() !== 'C') requestIdleCallback(() => import('../engine/scene/SystemScene').then(...))
+  import { mountHero } from '../engine/scene/hero';
+
+  let unmount: (() => void) | null = null;
+  const stop = () => { unmount?.(); unmount = null; };
+
   document.documentElement.dataset.sceneTier = currentTier();
+  // ClientRouter: init on every page-load, release before every swap (ARD §5 cleanup rule).
+  document.addEventListener('astro:page-load', () => {
+    stop();
+    const root = document.querySelector<HTMLElement>('.hero-scene');
+    const tier = currentTier();
+    if (root && tier !== 'C') unmount = mountHero(root, tier);
+  });
+  document.addEventListener('astro:before-swap', stop);
 </script>
 <style>
   .hero-scene { position: absolute; inset: 0; z-index: var(--z-scene); pointer-events: none; }
-  .edges { position: absolute; inset: 8% 6%; width: 88%; height: 84%; }
+  .hero-grid { position: absolute; inset: -5%; }
+  .plot { position: absolute; inset: 8% 6%; }
+  .edges, :global(#system-environment) { position: absolute; inset: 0; width: 100%; height: 100%; }
   .edges line { stroke: var(--c-rule); stroke-width: 1; }
-  .node { position: absolute; transform: translate(-50%, -50%); color: var(--c-muted); display: flex; align-items: center; gap: 8px; margin: 8% 6%; }
-  .node i { width: 7px; height: 7px; background: var(--c-text); display: block; }
+  :global(#system-environment) { opacity: 0; transition: opacity var(--d-3) var(--e-out); }
+  .node { position: absolute; color: var(--c-muted); }
+  .node i { position: absolute; left: 0; top: 0; width: 7px; height: 7px; background: var(--c-text); transform: translate(-50%, -50%); }
+  .node .lbl { position: absolute; left: 12px; top: 0; transform: translateY(-50%); white-space: nowrap; }
   .node[data-node='authorization'] i { background: var(--c-system); }
   .node[data-node='security'] i { background: var(--c-risk); }
+  /* Cross-fade: the canvas draws edges and markers; labels stay HTML text. All absolute, so no layout shift. */
+  .edges, .node i { transition: opacity var(--d-3) var(--e-out); }
+  .is-live :global(#system-environment) { opacity: 1; }
+  .is-live .edges, .is-live .node i { opacity: 0; }
+  .depth-chip { position: absolute; right: var(--gutter); top: var(--s-4); z-index: var(--z-content); background: transparent; color: var(--c-text); border: 1px solid var(--c-rule); border-radius: var(--r-1); padding: var(--s-2) var(--s-3); font-size: 12px; cursor: pointer; }
+  .depth-chip:hover { border-color: var(--c-system); color: var(--c-system); }
+  .depth-chip[hidden] { display: none; }
   @media (max-width: 720px) { .node { font-size: 10px; } }
 </style>
