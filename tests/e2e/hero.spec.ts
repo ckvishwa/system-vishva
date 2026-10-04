@@ -140,3 +140,19 @@ test('iOS-style gyro: "Enable depth" is labelled, keyboard reachable, and asks p
   await expect(chip).toBeHidden();
   await ctx.close();
 });
+
+test('case study idles at 0 frames, before and after scrolling and resizing (GSAP must not keep a loop alive)', async ({ page }) => {
+  await instrument(page);
+  await page.goto('/work/rexi/');
+  const idleFrames = async () => {
+    await page.waitForTimeout(2200);
+    await page.evaluate(() => { (window as any).__frames = 0; });
+    await page.waitForTimeout(1500);
+    return page.evaluate(() => (window as any).__frames);
+  };
+  expect(await idleFrames()).toBe(0);
+  for (const y of [300, 700, 1100, 400]) { await page.evaluate((top) => scrollTo(0, top), y); await page.waitForTimeout(200); }
+  expect(await idleFrames()).toBe(0);
+  await page.setViewportSize({ width: 900, height: 700 });
+  expect(await idleFrames()).toBe(0);
+});

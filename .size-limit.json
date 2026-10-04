@@ -1,4 +1,5 @@
 [
-  { "name": "pre-LCP JS (all pages, excl. three/gsap)", "path": "dist/_astro/!(three*|gsap*|ScrollTrigger*|SystemScene*|scroll*)*.js", "gzip": true, "limit": "60 KB" },
-  { "name": "home total incl. three", "path": "dist/_astro/*.js", "gzip": true, "limit": "250 KB" }
+  { "name": "pre-LCP JS (all pages, excl. lazy three/gsap/scene/scroll/terminal chunks)", "path": "dist/_astro/!(three.module.????????|gsap.????????|ScrollTrigger.????????|SystemScene.????????|scroll.????????|terminal.????????).js", "gzip": true, "limit": "60 KB" },
+  { "name": "home total incl. three", "path": "dist/_astro/*.js", "gzip": true, "limit": "250 KB" },
+  { "name": "terminal (lazy, first open)", "path": "dist/_astro/terminal.????????.js", "gzip": true, "limit": "6 KB" }
 ]

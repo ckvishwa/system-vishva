@@ -14,7 +14,7 @@ Site must make a reviewer think "this person thinks in systems", not "this perso
 - Colours only from src/styles/tokens.css. Accents semantic: --c-system = operational/pass, --c-risk = risk/block, --c-info = information. Border radius 0/2/4px only.
 - No new hex values, no gradients, no glow, no decorative particles, no scroll hijacking, no Lenis, no fake terminal output, no invented metrics.
 - Every metric comes from src/content/claims/claims.yaml. Never hard-code numbers in copy. Don't touch claims.yaml values.
-- Input listeners: pointer.ts, gyro.ts and scroll.ts (src/engine/input/) are the only ones. Effects read from them, never add their own.
+- Input listeners: pointer.ts, gyro.ts and scroll.ts (src/engine/input/) are the only ones effects use; effects never add their own. keys.ts is the single keyboard-shortcut listener, for the terminal only.
 - Every animation communicates one of: flow, state, dependency, cause, hierarchy, change. Otherwise delete it.
 - No invented copy about the owner's experience. Mark gaps with TODO and list them at end of each phase.
 - If a rule blocks something, stop and ask. Do not work around it.
@@ -32,6 +32,16 @@ Banned: Matrix rain/katakana, skulls/masks/hoodies, ACCESS GRANTED/HACKING bars,
 constant flicker, looping glitches, idle chromatic aberration, glow/bloom/neon, anything that makes text hard to read.
 The only colour token added for this is --c-scan; no other new colours.
 Grain is never a fixed full-screen layer: it is applied to the hero and case-study headers only, tier A only.
+
+## Brutalist telemetry layer (ADR-0013): only where it shows something real
+- Cells (ruled boxes, shared borders, tabular-nums) for metrics and status; a 4px rule opens each major section, 1px elsewhere.
+- Hard offset shadow on interactive elements only, never on static content. At most ONE inverted block per page.
+- Styles are layered: reset, tokens, base, components, fx (fx is removable). Effects are declared with `data-fx="..."`.
+- Terminal and /status read only content collections, build.json or the live browser. Never invent a number, command output or log.
+- The terminal is lazy (6 KB gz budget) with instant output: no typing animation, no boot sequence, no window chrome.
+- Rejected, never add: neon glow or text-glow; cyan/magenta/yellow cyberpunk palettes; terminal window-chrome dots; "hack the planet" /
+  "EXECUTE" / "TERMINATE" copy; datastream or falling-character effects; icon packs (no icons, type and rules only).
+- GSAP must not keep any idle loop alive (see scroll.ts). Every page except the homepage hero idles at 0 frames; e2e enforces it.
 
 ## Accessibility / motion
 - prefers-reduced-motion or tier C: no WebGL, no scroll animation (final state shown), transitions are instant swap.

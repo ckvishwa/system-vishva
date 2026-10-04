@@ -1,0 +1,7 @@
+# The facts shown on /about and printed by the terminal's `whoami`. One source, so they cannot disagree.
+# Add facts here only when they are true; the page joins them into one paragraph in this order.
+name: Vishva Teja Chikoti
+facts:
+  - M.S. Cybersecurity & Networks, University of New Haven (2025).
+  - CompTIA Security+.
+  - Previously Programmer Analyst at Cognizant, working across quality engineering, security operations and vulnerability analysis.

@@ -33,4 +33,12 @@ Only `src/islands/` hydrates. The site has one frame loop: `src/engine/scheduler
 - [ ] Rexi beat 5 needs captured interpreter outputs: src/content/work/rexi/README.md
 - [ ] Phase 1 hand tests on a real Android phone and iPhone (see the Phase 1 report)
 
+## Phase 1.5 status
+
+- [x] Cascade layers, `data-fx` effects, spec-sheet cells, 4px section rules, tabular-nums, container queries
+- [x] Homepage telemetry strip and `/status` (gate, claims ledger, this visitor, history, lab)
+- [x] Hard shadows (interactive only), one inverted block per page, grid coordinates
+- [x] Command terminal (`/` or the nav item): lazy, 6 KB budget, real data only
+- [ ] Phone checks: the terminal on iOS and Android (keyboard, 100dvh), hard-shadow tap states
+
 `npm run test:e2e` needs a browser. If Playwright cannot download its own, run `PW_CHANNEL=chrome npm run test:e2e`.

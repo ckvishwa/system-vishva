@@ -11,11 +11,8 @@ export function timecode(ms: number, fps = 30): string {
   return `${pad(s / 3600)}:${pad((s / 60) % 60)}:${pad(s % 60)}:${pad(((ms % 1000) / 1000) * fps)}`;
 }
 
-/** The real route as a shell-style prompt: "/" -> "vishva@system:~$", "/work/rexi/" -> "vishva@system:~/work/rexi$". */
-export function prompt(path: string): string {
-  const p = path.replace(/\/+$/, '');
-  return `vishva@system:~${p}$`;
-}
+import { prompt } from '../prompt';
+export { prompt };
 
 export const coords = (x: number, y: number) => `X ${pad(x, 4)}  Y ${pad(y, 4)}`;
 

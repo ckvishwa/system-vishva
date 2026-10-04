@@ -98,7 +98,7 @@ describe('fx budget and rules (ADR-0012)', () => {
     const out = buildSync({
       entryPoints: files.map((f) => `${dir}/${f}`),
       bundle: true, minify: true, write: false, format: 'esm', target: 'es2022', splitting: true, outdir: 'out',
-      external: ['../scheduler', '../input/*', '../motion/*'],
+      external: ['../scheduler', '../prompt', '../input/*', '../motion/*'],
     });
     const gz = gzipSync(Buffer.concat(out.outputFiles.map((o) => Buffer.from(o.contents)))).length;
     expect(gz, `fx is ${gz} B gzipped`).toBeLessThan(4096);

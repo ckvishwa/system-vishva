@@ -1,0 +1,21 @@
+---
+// Command terminal (ARD §7 idea 10). Only this tiny loader ships up front; the terminal itself is imported
+// on first open, so pre-LCP JS does not change. Opens with "/" or "`" on desktop, or from the nav item.
+---
+<script>
+  import { navigate } from 'astro:transitions/client';
+  import { onShortcut } from '../engine/input/keys';
+
+  let mod: Promise<typeof import('../engine/terminal')> | null = null;
+  const open = (opener?: HTMLElement | null) => {
+    mod ??= import('../engine/terminal');
+    mod.then((m) => m.openTerminal({ navigate, opener }));
+  };
+
+  onShortcut(['/', '`'], () => open());
+  // The nav item lives in a persisted header, so one delegated listener covers every page.
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as Element).closest<HTMLElement>('[data-terminal-open]');
+    if (btn) { e.preventDefault(); open(btn); }
+  });
+</script>

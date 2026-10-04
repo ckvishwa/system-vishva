@@ -14,6 +14,7 @@ const path = Astro.url.pathname;
     <nav aria-label="Primary">
       <ul>
         {links.map((l) => <li><a href={l.href} aria-current={path.startsWith(l.href) ? 'page' : undefined}>{l.label}</a></li>)}
+        <li><button type="button" class="term-open" data-terminal-open aria-haspopup="dialog" title="Open the terminal (press / on a keyboard)">Terminal</button></li>
         <li><a href="/plain/" class="mono muted" title="No motion, single column, print-ready">Plain</a></li>
       </ul>
     </nav>
@@ -25,5 +26,7 @@ const path = Astro.url.pathname;
   .mark { font-size: var(--t-sm); font-weight: 600; }
   ul { display: flex; gap: clamp(12px, 2.5vw, 32px); list-style: none; font-size: var(--t-sm); overflow-x: auto; }
   a[aria-current='page'] { color: var(--c-system); }
+  .term-open { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+  .term-open:hover { color: var(--c-system); }
   @media (max-width: 560px) { ul li:last-child { display: none; } .mark { display: none; } }
 </style>

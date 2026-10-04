@@ -11,7 +11,6 @@ import { countUp } from './count';
 
 export async function initScrollStory(root: HTMLElement): Promise<() => void> {
   const [{ gsap }, { ScrollTrigger }] = await Promise.all([import('gsap'), import('gsap/ScrollTrigger')]);
-  gsap.registerPlugin(ScrollTrigger);
 
   const nodes = [...root.querySelectorAll<SVGGElement>('[data-node]')];
   const traces = [...root.querySelectorAll<SVGPathElement>('[data-trace]')];
@@ -27,24 +26,44 @@ export async function initScrollStory(root: HTMLElement): Promise<() => void> {
     traces.forEach((t, j) => t.classList.toggle('is-drawn', traceOn(on, j)));
   };
 
-  const triggers: Array<{ kill: () => void }> = groups.map((g) =>
-    ScrollTrigger.create({
-      trigger: g.el,
-      start: 'top 75%',
-      end: 'bottom 45%',
-      onUpdate: (self) => { g.progress = self.progress; render(); },
-      onRefresh: (self) => { g.progress = self.progress; render(); },
-    }),
-  );
+  const triggers: Array<{ kill: () => void }> = [];
 
-  const metrics = root.querySelector<HTMLElement>('[data-beat="state"]');
-  if (metrics) {
-    triggers.push(ScrollTrigger.create({
-      trigger: metrics,
-      start: 'top 85%',
-      once: true,
-      onEnter: () => metrics.querySelectorAll<HTMLElement>('[data-count]').forEach(countUp),
-    }));
+  // ARD §5: one frame loop. Left alone, GSAP keeps an idle case study busy three ways: ScrollTrigger runs a
+  // perpetual requestAnimationFrame loop (a repaint workaround), GSAP's ticker is a second one, and a 250 ms
+  // setInterval polls sizes and schedules a frame each time. None is needed here: ScrollTrigger re-evaluates on
+  // scroll and resize, and our callbacks only toggle classes. Starve all three while it initialises, then
+  // restore the real functions so scroll-driven updates still run (those are finite: they stop with the scroll).
+  // The e2e test "case study idles at 0 frames" fails if a GSAP upgrade brings any of them back.
+  const realRaf = window.requestAnimationFrame;
+  const realInterval = window.setInterval;
+  window.requestAnimationFrame = () => 0;
+  window.setInterval = (() => 0) as unknown as typeof window.setInterval;
+  try {
+    gsap.registerPlugin(ScrollTrigger);
+    gsap.ticker.sleep();
+
+    for (const g of groups) {
+      triggers.push(ScrollTrigger.create({
+        trigger: g.el,
+        start: 'top 75%',
+        end: 'bottom 45%',
+        onUpdate: (self) => { g.progress = self.progress; render(); },
+        onRefresh: (self) => { g.progress = self.progress; render(); },
+      }));
+    }
+
+    const metrics = root.querySelector<HTMLElement>('[data-beat="state"]');
+    if (metrics) {
+      triggers.push(ScrollTrigger.create({
+        trigger: metrics,
+        start: 'top 85%',
+        once: true,
+        onEnter: () => metrics.querySelectorAll<HTMLElement>('[data-count]').forEach(countUp),
+      }));
+    }
+  } finally {
+    window.requestAnimationFrame = realRaf;
+    window.setInterval = realInterval;
   }
 
   render();

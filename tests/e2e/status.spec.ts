@@ -122,3 +122,16 @@ test('T4: grid coordinates sit on the 48px grid of the hero and the status page'
     expect(r[1].dx - r[0].dx).toBe(192);
   }
 });
+
+test('every page other than the homepage hero idles at 0 frames', async ({ page }) => {
+  test.setTimeout(90_000);
+  const { instrument } = await import('./helpers');
+  await instrument(page);
+  for (const r of routes.filter((x) => x !== '/')) {
+    await page.goto(r);
+    await page.waitForTimeout(2200); // decrypt, redaction and count-ups have finished
+    await page.evaluate(() => { (window as any).__frames = 0; });
+    await page.waitForTimeout(1200);
+    expect(await page.evaluate(() => (window as any).__frames), r).toBe(0);
+  }
+});
