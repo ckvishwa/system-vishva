@@ -146,3 +146,27 @@ test('rexi metrics count up and land on the exact text already in the HTML', asy
   expect(await page.locator('[data-count]').allTextContents()).toEqual(before);
   expect(before).toEqual(['323+', '50/50', '71']);
 });
+
+test('iOS-style gyro: "Enable depth" is labelled, keyboard reachable, and asks permission from the tap', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const page = await ctx.newPage();
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 6 });
+    Object.defineProperty(navigator, 'deviceMemory', { get: () => 4 });
+    (window as any).__perm = 0;
+    (window as any).DeviceOrientationEvent = Object.assign(function () {}, {
+      requestPermission: async () => { (window as any).__perm++; return 'granted'; },
+    });
+  });
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-tier', 'B');
+  const chip = page.getByRole('button', { name: 'Enable depth' });
+  await expect(chip).toBeVisible();
+  expect(await page.evaluate(() => (window as any).__perm)).toBe(0); // never prompts before a gesture
+  await chip.focus();
+  await expect(chip).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect.poll(() => page.evaluate(() => (window as any).__perm)).toBe(1);
+  await expect(chip).toBeHidden();
+  await ctx.close();
+});
