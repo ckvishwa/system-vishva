@@ -40,7 +40,9 @@ const graph = JSON.stringify({ nodes: g.nodes, edges: g.edges });
 <style>
   .hero-scene { position: absolute; inset: 0; z-index: var(--z-scene); pointer-events: none; }
   .hero-grid { position: absolute; inset: -5%; }
-  .plot { position: absolute; inset: 8% 6%; }
+  /* E1: the graph lives in the upper right; the lower left belongs to the text. */
+  .plot { position: absolute; inset: 10% 6% 34% 44%; }
+  @media (max-width: 720px) { .plot { inset: 8% 6% 52% 6%; } }
   .edges, :global(#system-environment) { position: absolute; inset: 0; width: 100%; height: 100%; }
   .edges line { stroke: var(--c-rule); stroke-width: 1; }
   :global(#system-environment) { opacity: 0; transition: opacity var(--d-3) var(--e-out); }

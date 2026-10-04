@@ -11,6 +11,9 @@
   --c-risk: #ff493d;       /* risk / error / block */
   --c-info: #56a8ff;       /* information */
 
+  /* ADR-0012 (E7): static hero scanlines. A tint of --c-text, so no new hex. Grain opacity lives in global.css. */
+  --c-scan: color-mix(in srgb, var(--c-text) 2%, transparent);
+
   --r-0: 0px; --r-1: 2px; --r-2: 4px;
 
   --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;

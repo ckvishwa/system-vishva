@@ -25,6 +25,8 @@ const claims = d.claimIds.length ? await getEntries(d.claimIds.map((id: string) 
 </Base>
 
 <style>
-  .case-head { padding-block: var(--s-9) var(--s-7); display: grid; gap: var(--s-4); }
+  /* E1: the header hugs the left edge and leaves the right empty; nothing is centred. */
+  .case-head { width: 60%; max-width: none; margin-inline: 0; padding-block: var(--s-9) var(--s-7); display: grid; gap: var(--s-4); }
+  @media (max-width: 720px) { .case-head { width: 100%; } }
   .thesis { max-width: 22ch; color: var(--c-muted); }
 </style>

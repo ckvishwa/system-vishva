@@ -46,10 +46,14 @@ const lab = await getCollection('lab');
 
 <style>
   .hero { position: relative; min-height: calc(100dvh - 56px); display: grid; align-items: end; overflow: hidden; border-bottom: 1px solid var(--c-rule); }
-  .hero-copy { position: relative; z-index: var(--z-content); padding-block: var(--s-9) var(--s-8); display: grid; gap: var(--s-5); }
+  /* E1: off-centre. The name and claim are pinned bottom-left at ~60% width; the upper right is the graph and empty black. */
+  .hero-copy { position: relative; z-index: var(--z-content); width: 60%; max-width: none; margin-inline: 0; padding-block: var(--s-9) var(--s-8); display: grid; gap: var(--s-5); }
+  @media (max-width: 720px) { .hero-copy { width: 100%; } }
   .hero-copy .display { text-transform: uppercase; }
   .claim { max-width: 24ch; }
   .enter { color: var(--c-system); justify-self: start; border: 1px solid var(--c-system); padding: var(--s-2) var(--s-4); }
+  .hero::after { content: ''; position: absolute; inset: 0; z-index: var(--z-scene); pointer-events: none; background: repeating-linear-gradient(to bottom, var(--c-scan) 0 1px, transparent 1px 3px); } /* E7, static */
+  :global(html[data-tier='C']) .hero::after { display: none; }
   .enter:hover { background: var(--c-system); color: var(--c-bg); }
   .block { padding-block: var(--s-9) 0; display: grid; gap: var(--s-5); }
   .principles { list-style: none; display: grid; gap: var(--s-4); }

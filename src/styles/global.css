@@ -29,3 +29,16 @@ a:hover { color: var(--c-system); }
   background-size: 48px 48px;
   background-position: -1px -1px;
 }
+
+/* ADR-0012 (E7): one static film-grain overlay, 3.5% overlay blend. Never animates. Off under tier C. */
+html:not([data-tier='C']) body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-cursor);
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-size: 160px 160px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
