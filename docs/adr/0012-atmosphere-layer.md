@@ -7,7 +7,7 @@ A small set of effects in `src/engine/fx/` gives the site its tone: quiet, watch
 forensics, not cyberpunk. The darkness comes from composition, restraint and rare, deliberate disruption.
 
 Effects: off-centre composition (CSS), depth parallax, redaction reveal, heading decrypt, a signal glitch inside page
-transitions, a real-data HUD on the hero, static film grain and hero scanlines, and one console message.
+transitions, a real-data HUD on the hero, static film grain (hero and case-study headers, tier A only) and hero scanlines, and one console message.
 
 ## Rules (every effect must satisfy all of them)
 1. Runs through the scheduler. No `requestAnimationFrame` outside `src/engine/scheduler.ts`. CSS transitions are fine.
@@ -27,6 +27,10 @@ transitions, a real-data HUD on the hero, static film grain and hero scanlines, 
 | Heading decrypt | change of state |
 | Signal glitch (transitions only) | change |
 | HUD | state |
+
+## Grain
+Grain is never a fixed full-screen layer: a blended fixed overlay costs scroll performance. It is applied only to the hero and
+case-study headers (non-fixed), only on tier A. Tier B drops it entirely.
 
 ## Banned
 Matrix rain and katakana; skulls, masks, hoodies; "ACCESS GRANTED" / "HACKING…" bars; fake typing; green-on-black as the main

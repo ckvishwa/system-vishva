@@ -30,12 +30,14 @@ a:hover { color: var(--c-system); }
   background-position: -1px -1px;
 }
 
-/* ADR-0012 (E7): one static film-grain overlay, 3.5% overlay blend. Never animates. Off under tier C. */
-html:not([data-tier='C']) body::after {
+/* ADR-0012 (E7): static film grain, 3.5% overlay blend (an SVG feTurbulence data URI). Never animates.
+   Not a fixed full-screen layer (that costs scroll performance): only the hero and case-study headers, tier A only. */
+.hero, .case-head { position: relative; }
+html[data-tier='A'] :is(.hero, .case-head)::before {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: var(--z-cursor);
+  z-index: var(--z-content);
   pointer-events: none;
   opacity: 0.035;
   mix-blend-mode: overlay;

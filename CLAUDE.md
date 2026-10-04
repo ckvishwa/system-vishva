@@ -14,6 +14,7 @@ Site must make a reviewer think "this person thinks in systems", not "this perso
 - Colours only from src/styles/tokens.css. Accents semantic: --c-system = operational/pass, --c-risk = risk/block, --c-info = information. Border radius 0/2/4px only.
 - No new hex values, no gradients, no glow, no decorative particles, no scroll hijacking, no Lenis, no fake terminal output, no invented metrics.
 - Every metric comes from src/content/claims/claims.yaml. Never hard-code numbers in copy. Don't touch claims.yaml values.
+- Input listeners: pointer.ts, gyro.ts and scroll.ts (src/engine/input/) are the only ones. Effects read from them, never add their own.
 - Every animation communicates one of: flow, state, dependency, cause, hierarchy, change. Otherwise delete it.
 - No invented copy about the owner's experience. Mark gaps with TODO and list them at end of each phase.
 - If a rule blocks something, stop and ask. Do not work around it.
@@ -30,6 +31,7 @@ Decrypt on H1 only, once per element, aria-label holds the real text. Glitch onl
 Banned: Matrix rain/katakana, skulls/masks/hoodies, ACCESS GRANTED/HACKING bars, fake typing, green-on-black as the main look,
 constant flicker, looping glitches, idle chromatic aberration, glow/bloom/neon, anything that makes text hard to read.
 The only colour token added for this is --c-scan; no other new colours.
+Grain is never a fixed full-screen layer: it is applied to the hero and case-study headers only, tier A only.
 
 ## Accessibility / motion
 - prefers-reduced-motion or tier C: no WebGL, no scroll animation (final state shown), transitions are instant swap.

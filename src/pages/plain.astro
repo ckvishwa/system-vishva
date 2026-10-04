@@ -27,5 +27,5 @@ const withClaims = await Promise.all(work.map(async (w) => ({
   .plain { padding-block: var(--s-8); display: grid; gap: var(--s-6); }
   .plain section { border-top: 1px solid var(--c-rule); padding-top: var(--s-4); display: grid; gap: var(--s-2); }
   .plain ul { padding-left: 1.2em; }
-  @media print { :global(.nav), :global(.status) { display: none; } :global(html) { background: #fff; color: #000; } }
+  @media print { :global(.nav), :global(.status) { display: none; } :global(html) { background: var(--c-print-bg); color: var(--c-print-text); } }
 </style>

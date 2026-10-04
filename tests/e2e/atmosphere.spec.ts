@@ -37,7 +37,7 @@ test('reduced motion: no bars, no grain, no HUD, no decrypt, text intact', async
   await page.waitForTimeout(800);
   await expect(page.locator('html')).not.toHaveAttribute('data-fx', /.+/);
   expect(await barClip(page, '.claim')).toMatch(/100%/);
-  expect(await page.evaluate(() => getComputedStyle(document.body, '::after').content)).toBe('none');
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('.hero')!, '::before').content)).toBe('none');
   await expect(page.locator('[data-hud]')).toBeHidden();
   await expect(page.locator('h1')).not.toHaveAttribute('aria-label', /.+/);
   await expect(page.locator('h1')).toHaveText(/Vishva\s*Teja/);
@@ -93,11 +93,22 @@ test('console: one greeting with the link, nothing else hidden', async ({ page }
   expect(g[0]).toContain('github.com/ckvishwa');
 });
 
-test('grain is a static overlay at 3.5% on tiers A/B and never animates', async ({ page }) => {
+test('grain: static, 3.5%, hero and case header only, not a fixed layer; none on tier B', async ({ page, browser }) => {
   await instrument(page);
   await page.goto('/');
-  const g = await page.evaluate(() => { const s = getComputedStyle(document.body, '::after'); return { op: s.opacity, blend: s.mixBlendMode, anim: s.animationName, pe: s.pointerEvents }; });
-  expect(g).toEqual({ op: '0.035', blend: 'overlay', anim: 'none', pe: 'none' });
+  const g = await page.evaluate(() => { const s = getComputedStyle(document.querySelector('.hero')!, '::before'); return { op: s.opacity, blend: s.mixBlendMode, anim: s.animationName, pos: s.position }; });
+  expect(g).toEqual({ op: '0.035', blend: 'overlay', anim: 'none', pos: 'absolute' });
+  expect(await page.evaluate(() => getComputedStyle(document.body, '::after').content)).toBe('none'); // no full-screen layer
+  await page.goto('/work/rexi/');
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('.case-head')!, '::before').opacity)).toBe('0.035');
+
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  const phone = await ctx.newPage();
+  await phone.addInitScript(() => { Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 6 }); });
+  await phone.goto('/');
+  await expect(phone.locator('html')).toHaveAttribute('data-tier', 'B');
+  expect(await phone.evaluate(() => getComputedStyle(document.querySelector('.hero')!, '::before').content)).toBe('none');
+  await ctx.close();
 });
 
 test('case study: labels drift slower than body text but never leave the viewport band', async ({ page }) => {

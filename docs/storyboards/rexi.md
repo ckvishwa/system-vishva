@@ -11,7 +11,7 @@ Node numbers are the ones printed on the diagram.
 | 1 | 0 | "Voice AI without giving the model control." (the thesis) | Redaction reveal of the thesis (atmosphere layer, E3) | state |
 | 2 | 10–40 | Pipeline nodes 01–03: Call, VAD, STT | Nodes activate in order, connectors trace between | flow |
 | 3 | 40–60 | Nodes 04–06: Interpreter, FSM, Pricing; then 07–08, Confirm and POS | Same. Interpreter is drawn dashed and muted, tagged "proposal", and never turns the pass colour | dependency |
-| 4 | 60–75 | "LLMs are good at language. They are bad places to store business truth." | Hard cut, no motion (the redaction wipe of E3 is a stepped near-cut, see ADR-0012) | cause |
+| 4 | 60–75 | "LLMs are good at language. They are bad places to store business truth." | Stepped 400 ms redaction wipe (approved in place of a pure hard cut, see ADR-0012). No other motion | cause |
 | 5 | 75–90 | Model proposal vs server authorization, side by side | Proposal stamped VALIDATED / REJECTED. **Placeholder until real captures exist** | change |
 | 6 | 90–100 | Metrics from the claims ledger | Count-up, evidence links, final value already in the HTML | state |
 
