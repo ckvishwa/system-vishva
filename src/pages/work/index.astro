@@ -1,0 +1,12 @@
+---
+import Base from '../../layouts/Base.astro';
+import SystemRecord from '../../components/ui/SystemRecord.astro';
+import { getCollection } from 'astro:content';
+const work = (await getCollection('work', (w) => !w.data.draft)).sort((a, b) => a.data.order - b.data.order);
+---
+<Base title="Work">
+  <section class="wrap" style="padding-block: var(--s-9)">
+    <h1 class="display">Work</h1>
+    {work.map((w, i) => <SystemRecord index={i + 1} slug={w.id} title={w.data.title} category={w.data.category} pipeline={w.data.pipeline} metrics={[]} />)}
+  </section>
+</Base>

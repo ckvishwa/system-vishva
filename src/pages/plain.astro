@@ -1,0 +1,31 @@
+---
+// ARD §7 idea 6 — recruiter mode: zero motion, one column, print-ready. Same content collections.
+import Base from '../layouts/Base.astro';
+import { getCollection, getEntries } from 'astro:content';
+const work = (await getCollection('work', (w) => !w.data.draft)).sort((a, b) => a.data.order - b.data.order);
+const withClaims = await Promise.all(work.map(async (w) => ({
+  w, claims: w.data.claimIds.length ? await getEntries(w.data.claimIds.map((id) => ({ collection: 'claims' as const, id }))) : [],
+})));
+---
+<Base title="Plain" motion={false}>
+  <article class="wrap prose plain">
+    <h1 class="h1">Vishva Teja Chikoti</h1>
+    <p>AI systems engineering with security and reliability as first-class constraints. New Haven, CT.</p>
+    {withClaims.map(({ w, claims }) => (
+      <section>
+        <h2 class="h2">{w.data.title}: {w.data.category}</h2>
+        <p>{w.data.thesis}</p>
+        <p class="mono">Pipeline: {w.data.pipeline.join(' → ')}</p>
+        <p class="mono">Stack: {w.data.stack.join(', ')}</p>
+        {claims.length > 0 && <ul>{claims.map((c) => <li>{c!.data.display} {c!.data.label.toLowerCase()}</li>)}</ul>}
+        <p><a href={`/work/${w.id}/`}>Full case study</a></p>
+      </section>
+    ))}
+  </article>
+</Base>
+<style>
+  .plain { padding-block: var(--s-8); display: grid; gap: var(--s-6); }
+  .plain section { border-top: 1px solid var(--c-rule); padding-top: var(--s-4); display: grid; gap: var(--s-2); }
+  .plain ul { padding-left: 1.2em; }
+  @media print { :global(.nav), :global(.status) { display: none; } :global(html) { background: #fff; color: #000; } }
+</style>

@@ -1,0 +1,23 @@
+# Drives the hero network (Phase 1) and the Systems page (Phase 3).
+# x/y are layout positions in a 0–100 box; the WebGL scene reuses them.
+nodes:
+  - { id: voice, label: Voice, x: 8, y: 30 }
+  - { id: model, label: Model, x: 22, y: 72 }
+  - { id: interpreter, label: Interpreter, x: 34, y: 38 }
+  - { id: authorization, label: Authorization, x: 54, y: 58 }
+  - { id: state, label: State, x: 72, y: 26 }
+  - { id: evaluation, label: Evaluation, x: 88, y: 52 }
+  - { id: security, label: Security, x: 58, y: 88 }
+  - { id: telemetry, label: Telemetry, x: 84, y: 86 }
+edges:
+  - [voice, interpreter]
+  - [model, interpreter]
+  - [interpreter, authorization]
+  - [authorization, state]
+  - [state, evaluation]
+  - [security, authorization]
+  - [telemetry, security]
+  - [evaluation, telemetry]
+projects:
+  rexi: [voice, model, interpreter, authorization, state, evaluation]
+  maltrace: [security, telemetry, model, evaluation]

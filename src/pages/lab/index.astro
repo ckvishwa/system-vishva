@@ -1,0 +1,31 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+const DAY = 864e5;
+const lab = (await getCollection('lab')).map((l) => ({
+  ...l.data,
+  // ARD L-11: stale "active" work is labelled honestly
+  shown: l.data.status === 'active' && Date.now() - l.data.lastTouched.getTime() > 90 * DAY ? 'dormant' : l.data.status,
+}));
+---
+<Base title="Lab">
+  <section class="wrap" style="padding-block: var(--s-9)">
+    <h1 class="display">Lab</h1>
+    <p class="h2 muted" style="max-width:28ch;margin-block:var(--s-5) var(--s-8)">Unfinished work, labelled by state.</p>
+    {lab.map((l) => (
+      <dl class="proc mono">
+        <dt class="name">{l.title}</dt><dd class="sum">{l.summary}</dd>
+        <dt>Status</dt><dd class={l.shown === 'active' ? 'ok' : 'muted'}>{l.shown}</dd>
+        <dt>Stage</dt><dd>{l.stage}</dd>
+        <dt>Stack</dt><dd>{l.stack.join(', ')}</dd>
+        <dt>Last touched</dt><dd>{l.lastTouched.toISOString().slice(0, 10)}</dd>
+      </dl>
+    ))}
+  </section>
+</Base>
+<style>
+  .proc { display: grid; grid-template-columns: 14ch 1fr; gap: var(--s-1) var(--s-4); padding-block: var(--s-6); border-top: 1px solid var(--c-rule); }
+  .name { grid-column: 1 / -1; font: 650 var(--t-xl) var(--f-sans); color: var(--c-text); letter-spacing: -0.02em; }
+  .sum { grid-column: 1 / -1; color: var(--c-muted); margin-bottom: var(--s-3); }
+  dt { color: var(--c-muted); }
+</style>

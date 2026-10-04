@@ -1,0 +1,26 @@
+# The site ships through its own release gate (ARD §8, creative idea 1).
+name: release-gate
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 50 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Claims must have evidence
+        run: npx tsx scripts/verify-claims.ts --strict
+      - name: Unit tests (engine)
+        run: npm test
+      - name: Build
+        run: npm run build
+      - name: JS budgets
+        run: npm run size
+      - name: Lighthouse budgets
+        run: npx @lhci/cli@latest autorun
+      - name: E2E (reduced motion, nav, context leaks)
+        run: npx playwright install --with-deps chromium && npm run test:e2e

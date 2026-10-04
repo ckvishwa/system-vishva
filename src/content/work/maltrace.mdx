@@ -1,0 +1,17 @@
+---
+title: MalTrace
+order: 2
+thesis: Classify malware by what it does, then show why.
+category: Behavioural malware intelligence
+stack: [Python, Sandbox, scikit-learn, SHAP, MITRE ATT&CK]
+pipeline: [Hash, Sandbox, API calls, Features, Random forest, SHAP, ATT&CK]
+claimIds: [maltrace-api-calls, maltrace-features, maltrace-confidence]
+signature: hash
+---
+
+## The investigation
+
+A sample is hashed, detonated, traced, reduced to behavioural features, scored, and explained
+feature by feature, then mapped to ATT&CK techniques.
+
+{/* Phase 1: storyboard in docs/storyboards/maltrace.md */}

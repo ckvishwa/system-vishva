@@ -1,0 +1,40 @@
+# ARD D-10 — the evidence ledger. Fill `evidence` with a link a reviewer can open:
+# test run, commit, eval file, notebook. `npm run gate` fails while any is null.
+- id: rexi-tests
+  label: Automated tests
+  value: 323
+  display: "323+"
+  project: rexi
+  evidence: null
+  evidenceNote: "TODO: link pytest run or CI badge"
+- id: rexi-pricing-parity
+  label: Pricing parity cases
+  value: 50
+  display: "50/50"
+  project: rexi
+  evidence: null
+- id: rexi-golden-evals
+  label: Golden evals
+  value: 71
+  display: "71"
+  project: rexi
+  evidence: null
+- id: maltrace-api-calls
+  label: API calls traced
+  value: 94958
+  display: "94,958"
+  project: maltrace
+  evidence: null
+- id: maltrace-features
+  label: Behavioural features
+  value: 54
+  display: "54"
+  project: maltrace
+  evidence: null
+- id: maltrace-confidence
+  label: Malicious confidence on sample
+  value: 95
+  display: "95%"
+  project: maltrace
+  evidence: null
+  evidenceNote: "Single-sample score, not model accuracy — label it that way on the page"

@@ -1,0 +1,27 @@
+/* Shared motion primitives (ARD L-07). Mirrors src/engine/motion/tokens.ts */
+:root {
+  --d-1: 120ms;  --d-2: 240ms;  --d-3: 480ms;  --d-4: 900ms;
+  --e-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --e-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  --e-step: steps(8, end);
+}
+
+/* Mask reveal: text emerges from a hard rectangular clip */
+.reveal-mask { clip-path: inset(0 100% 0 0); }
+.is-revealed .reveal-mask, .reveal-mask.is-revealed {
+  clip-path: inset(0 0 0 0);
+  transition: clip-path var(--d-3) var(--e-out);
+}
+
+/* Line tracing: SVG paths with pathLength="1" */
+.trace { stroke-dasharray: 1; stroke-dashoffset: 1; }
+.is-revealed .trace { stroke-dashoffset: 0; transition: stroke-dashoffset var(--d-4) var(--e-inout); }
+
+/* Tier C / reduced motion: final state, no movement (ARD §8 hard gate) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .reveal-mask { clip-path: none; }
+  .trace { stroke-dashoffset: 0; }
+}
+html[data-tier='C'] .reveal-mask { clip-path: none; }
+html[data-tier='C'] .trace { stroke-dashoffset: 0; }

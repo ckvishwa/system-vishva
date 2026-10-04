@@ -1,0 +1,6 @@
+---
+interface Props { label?: string }
+const { label } = Astro.props;
+---
+<section class="panel">{label && <p class="mono muted">{label}</p>}<slot /></section>
+<style>.panel { border: 1px solid var(--c-rule); border-radius: var(--r-0); padding: var(--s-5); display: grid; gap: var(--s-3); }</style>

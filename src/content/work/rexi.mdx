@@ -1,0 +1,21 @@
+---
+title: Rexi
+order: 1
+thesis: Voice AI without giving the model control.
+category: Voice AI ordering infrastructure
+stack: [LiveKit, SIP, Python, LLM tool calling, Postgres]
+pipeline: [Call, VAD, STT, Interpreter, FSM, Pricing, Confirm, POS]
+claimIds: [rexi-tests, rexi-pricing-parity, rexi-golden-evals]
+signature: waveform
+---
+
+## The problem
+
+LLMs are good at language. They are bad places to store business truth.
+
+## The boundary
+
+The model reads the caller and proposes an intent. The server owns everything that can be wrong in a
+way that costs money: menu validation, price calculation, cart mutation, quote generation and confirmation.
+
+{/* Phase 1: replace with storyboard beats from docs/storyboards/rexi.md */}

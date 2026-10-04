@@ -1,0 +1,12 @@
+{
+  "ci": {
+    "collect": { "staticDistDir": "./dist", "url": ["/", "/work/rexi/", "/plain/"], "numberOfRuns": 3 },
+    "assert": {
+      "assertions": {
+        "largest-contentful-paint": ["error", { "maxNumericValue": 2500 }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.02 }],
+        "categories:accessibility": ["error", { "minScore": 0.95 }]
+      }
+    }
+  }
+}

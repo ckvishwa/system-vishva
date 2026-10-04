@@ -1,0 +1,23 @@
+/* ARD §4 — the ONLY place hex values live. Accents are semantic, never decorative. */
+:root {
+  --c-bg: #050505;
+  --c-surface: #0a0a0a;
+  --c-text: #f2f2f2;
+  --c-muted: #8a8a8a;      /* plan said #777 (4.5:1, borderline); raised for small mono labels */
+  --c-grid: #181818;
+  --c-rule: #2a2a2a;
+
+  --c-system: #d7ff45;     /* operational / pass */
+  --c-risk: #ff493d;       /* risk / error / block */
+  --c-info: #56a8ff;       /* information */
+
+  --r-0: 0px; --r-1: 2px; --r-2: 4px;
+
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px;
+  --s-6: 32px; --s-7: 48px; --s-8: 64px; --s-9: 96px; --s-10: 144px;
+
+  --gutter: clamp(16px, 4vw, 48px);
+  --max: 1440px;
+
+  --z-scene: 0; --z-content: 10; --z-nav: 50; --z-cursor: 90;
+}

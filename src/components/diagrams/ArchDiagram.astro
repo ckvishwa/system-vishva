@@ -1,0 +1,30 @@
+---
+// Static SVG pipeline, zero JS (ARD D-05). Paths use pathLength="1" so .trace can draw them.
+interface Props { nodes: string[]; id: string }
+const { nodes, id } = Astro.props;
+const W = 168, H = 56, GAP = 40, PAD = 2;
+const width = nodes.length * W + (nodes.length - 1) * GAP + PAD * 2;
+---
+<div class="arch" data-reveal>
+  <svg viewBox={`0 0 ${width} ${H + PAD * 2}`} role="img" aria-labelledby={`arch-${id}`}>
+    <title id={`arch-${id}`}>{nodes.join(' then ')}</title>
+    {nodes.map((n, i) => {
+      const x = PAD + i * (W + GAP);
+      return (
+        <g>
+          <rect x={x} y={PAD} width={W} height={H} fill="none" stroke="var(--c-rule)" />
+          <text x={x + 14} y={PAD + 22} class="i">{String(i + 1).padStart(2, '0')}</text>
+          <text x={x + 14} y={PAD + 42} class="n">{n}</text>
+          {i < nodes.length - 1 && <path class="trace" pathLength="1" d={`M${x + W} ${PAD + H / 2}H${x + W + GAP}`} />}
+        </g>
+      );
+    })}
+  </svg>
+</div>
+<style>
+  .arch { overflow-x: auto; padding-block: var(--s-6); border-block: 1px solid var(--c-rule); }
+  svg { min-width: 720px; width: 100%; height: auto; }
+  .i { font: 500 11px var(--f-mono); fill: var(--c-muted); }
+  .n { font: 600 15px var(--f-sans); fill: var(--c-text); }
+  .trace { stroke: var(--c-system); stroke-width: 1.5; fill: none; }
+</style>

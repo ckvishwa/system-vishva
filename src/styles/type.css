@@ -1,0 +1,25 @@
+/* Two families: industrial grotesk + technical mono (ARD D-01, plan 1 §15) */
+:root {
+  --f-sans: 'Inter Tight Variable', 'Inter Tight', system-ui, sans-serif;
+  --f-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+
+  /* fluid scale, ratio ~1.333 */
+  --t-xs: 0.75rem;
+  --t-sm: 0.875rem;
+  --t-base: 1rem;
+  --t-lg: clamp(1.125rem, 1rem + 0.5vw, 1.333rem);
+  --t-xl: clamp(1.5rem, 1.2rem + 1.2vw, 2.369rem);
+  --t-2xl: clamp(2.25rem, 1.6rem + 3vw, 4.209rem);
+  --t-hero: clamp(3rem, 1.5rem + 8vw, 9.5rem);
+
+  --lh-tight: 0.92;
+  --lh-body: 1.55;
+  --track-tight: -0.035em;
+  --track-mono: 0.02em;
+}
+body { font-family: var(--f-sans); font-size: var(--t-base); line-height: var(--lh-body); }
+.mono { font-family: var(--f-mono); font-size: var(--t-xs); letter-spacing: var(--track-mono); }
+.display { font-size: var(--t-hero); line-height: var(--lh-tight); letter-spacing: var(--track-tight); font-weight: 700; }
+.h1 { font-size: var(--t-2xl); line-height: 1; letter-spacing: var(--track-tight); font-weight: 650; }
+.h2 { font-size: var(--t-xl); line-height: 1.05; letter-spacing: -0.02em; font-weight: 600; }
+.prose { max-width: 68ch; }

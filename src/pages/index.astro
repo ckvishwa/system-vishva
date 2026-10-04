@@ -1,0 +1,59 @@
+---
+import Base from '../layouts/Base.astro';
+import HeroScene from '../islands/HeroScene.astro';
+import SystemRecord from '../components/ui/SystemRecord.astro';
+import { getCollection, getEntries } from 'astro:content';
+import { parse } from 'yaml';
+import principlesRaw from '../content/principles.yaml?raw';
+
+const work = (await getCollection('work', (w) => !w.data.draft)).sort((a, b) => a.data.order - b.data.order);
+const records = await Promise.all(work.map(async (w) => {
+  const cs = w.data.claimIds.length ? await getEntries(w.data.claimIds.slice(0, 3).map((id) => ({ collection: 'claims' as const, id }))) : [];
+  return { w, metrics: cs.filter(Boolean).map((c) => `${c!.data.display} ${c!.data.label.toLowerCase()}`) };
+}));
+const principles = parse(principlesRaw) as string[];
+const lab = await getCollection('lab');
+---
+<Base title="Home">
+  <section class="hero grid-bg">
+    <HeroScene />
+    <div class="wrap hero-copy">
+      <p class="mono muted">AI systems / security / reliability</p>
+      <h1 class="display">Vishva<br />Teja</h1>
+      <p class="h2 claim">Building systems where probabilistic models don't control deterministic truth.</p>
+      <a class="mono enter" href="#systems">Enter the system</a>
+    </div>
+  </section>
+
+  <section id="systems" class="wrap block" aria-labelledby="sel">
+    <h2 id="sel" class="mono muted">Selected systems</h2>
+    {records.map(({ w, metrics }, i) => (
+      <SystemRecord index={i + 1} slug={w.id} title={w.data.title} category={w.data.category} pipeline={w.data.pipeline} metrics={metrics} />
+    ))}
+  </section>
+
+  <section class="wrap block" aria-labelledby="ops">
+    <h2 id="ops" class="mono muted">Operating principles</h2>
+    <ul class="principles">{principles.map((p) => <li class="h1">{p}</li>)}</ul>
+  </section>
+
+  <section class="wrap block" aria-labelledby="labh">
+    <h2 id="labh" class="mono muted">Current lab</h2>
+    <ul class="lab mono">{lab.map((l) => <li><span>{l.data.title}</span><span class="muted">{l.data.stage}</span><span class={l.data.status === 'active' ? 'ok' : 'muted'}>{l.data.status}</span></li>)}</ul>
+    <a class="mono" href="/lab/">Open the lab</a>
+  </section>
+</Base>
+
+<style>
+  .hero { position: relative; min-height: calc(100dvh - 56px); display: grid; align-items: end; overflow: hidden; border-bottom: 1px solid var(--c-rule); }
+  .hero-copy { position: relative; z-index: var(--z-content); padding-block: var(--s-9) var(--s-8); display: grid; gap: var(--s-5); }
+  .hero-copy .display { text-transform: uppercase; }
+  .claim { max-width: 24ch; }
+  .enter { color: var(--c-system); justify-self: start; border: 1px solid var(--c-system); padding: var(--s-2) var(--s-4); }
+  .enter:hover { background: var(--c-system); color: var(--c-bg); }
+  .block { padding-block: var(--s-9) 0; display: grid; gap: var(--s-5); }
+  .principles { list-style: none; display: grid; gap: var(--s-4); }
+  .principles li { border-top: 1px solid var(--c-rule); padding-top: var(--s-4); }
+  .lab { list-style: none; }
+  .lab li { display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--s-4); padding-block: var(--s-3); border-top: 1px solid var(--c-rule); }
+</style>

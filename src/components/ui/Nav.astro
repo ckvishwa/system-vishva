@@ -1,0 +1,29 @@
+---
+const links = [
+  { href: '/work/', label: 'Work' },
+  { href: '/lab/', label: 'Lab' },
+  { href: '/systems/', label: 'Systems' },
+  { href: '/about/', label: 'About' },
+  { href: '/contact/', label: 'Contact' },
+];
+const path = Astro.url.pathname;
+---
+<header class="nav" transition:persist>
+  <div class="wrap row">
+    <a href="/" class="mark mono">VISHVA.OS</a>
+    <nav aria-label="Primary">
+      <ul>
+        {links.map((l) => <li><a href={l.href} aria-current={path.startsWith(l.href) ? 'page' : undefined}>{l.label}</a></li>)}
+        <li><a href="/plain/" class="mono muted" title="No motion, single column, print-ready">Plain</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<style>
+  .nav { position: sticky; top: 0; z-index: var(--z-nav); background: color-mix(in srgb, var(--c-bg) 88%, transparent); border-bottom: 1px solid var(--c-rule); backdrop-filter: blur(6px); }
+  .row { display: flex; justify-content: space-between; align-items: center; height: 56px; gap: var(--s-4); }
+  .mark { font-size: var(--t-sm); font-weight: 600; }
+  ul { display: flex; gap: clamp(12px, 2.5vw, 32px); list-style: none; font-size: var(--t-sm); overflow-x: auto; }
+  a[aria-current='page'] { color: var(--c-system); }
+  @media (max-width: 560px) { ul li:last-child { display: none; } .mark { display: none; } }
+</style>

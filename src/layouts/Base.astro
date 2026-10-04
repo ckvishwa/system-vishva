@@ -1,0 +1,50 @@
+---
+import '@fontsource-variable/inter-tight';
+import '@fontsource-variable/jetbrains-mono';
+import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
+import Nav from '../components/ui/Nav.astro';
+import StatusBar from '../components/ui/StatusBar.astro';
+
+interface Props { title: string; description?: string; motion?: boolean }
+const { title, description = 'AI systems engineering with security and reliability as first-class constraints.', motion = true } = Astro.props;
+const fullTitle = title === 'Home' ? 'Vishva Teja Chikoti — AI systems, security, reliability' : `${title} — Vishva Teja Chikoti`;
+---
+<!doctype html>
+<html lang="en" data-tier="C">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#050505" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <!-- ARD §4: tier decided BEFORE first paint. Keep in sync with src/engine/tier.ts (decideTier). -->
+    <script is:inline>
+      (() => {
+        const m = (q) => matchMedia(q).matches;
+        const n = navigator;
+        let gl = false;
+        try { gl = !!document.createElement('canvas').getContext('webgl2'); } catch (e) {}
+        const cores = n.hardwareConcurrency || 4, mem = n.deviceMemory ?? null;
+        const plain = location.pathname.startsWith('/plain');
+        let t = 'B';
+        if (plain || m('(prefers-reduced-motion: reduce)') || (n.connection && n.connection.saveData) || !gl) t = 'C';
+        else if (cores <= 4 || (mem !== null && mem <= 2)) t = 'C';
+        else if (m('(pointer: coarse)')) t = 'B';
+        else if (cores >= 8 && (mem === null || mem >= 8)) t = 'A';
+        document.documentElement.dataset.tier = t;
+      })();
+    </script>
+    {motion && <ClientRouter fallback="swap" />}
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <Nav />
+    <main id="main"><slot /></main>
+    <StatusBar />
+  </body>
+</html>

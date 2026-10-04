@@ -1,0 +1,23 @@
+---
+// ARD §7 idea 1 + 9: the site reports its own build and render tier.
+import build from '../../generated/build.json';
+---
+<footer class="status mono" aria-label="Site status">
+  <div class="wrap row">
+    <span>Build {build.commit} · {build.date}</span>
+    <span>Gate: <b class={build.gate === 'pass' ? 'ok' : 'risk'}>{build.gate.toUpperCase()}</b></span>
+    <span>Render tier <b data-tier-label>C</b></span>
+    <span>Status: <b class="ok">available</b></span>
+  </div>
+</footer>
+<script>
+  const paint = () => document.querySelectorAll('[data-tier-label]').forEach((el) => (el.textContent = document.documentElement.dataset.tier ?? 'C'));
+  paint();
+  document.addEventListener('astro:page-load', paint);
+</script>
+<style>
+  .status { border-top: 1px solid var(--c-rule); margin-top: var(--s-10); color: var(--c-muted); }
+  .row { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-6); padding-block: var(--s-4); }
+  b { font-weight: 600; color: var(--c-text); }
+  b.ok { color: var(--c-system); } b.risk { color: var(--c-risk); }
+</style>
