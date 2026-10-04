@@ -28,7 +28,7 @@ Only `src/islands/` hydrates. The site has one frame loop: `src/engine/scheduler
 
 - [x] WebGL hero (SystemScene, one canvas, render on demand, tier A/B only), cross-fade from the static SVG
 - [x] Waveform page transition, reusable signature registry (MalTrace 'hash' plugs in later)
-- [x] Rexi scroll story (ScrollStory island, GSAP lazy-loaded on case studies only)
+- [x] Rexi scroll story (ScrollStory island on input/scroll.ts + the scheduler, no animation library)
 - [x] Atmosphere layer, ADR-0012 (parallax, redaction, decrypt, glitch in transitions, HUD, grain)
 - [ ] Rexi beat 5 needs captured interpreter outputs: src/content/work/rexi/README.md
 - [ ] Phase 1 hand tests on a real Android phone and iPhone (see the Phase 1 report)

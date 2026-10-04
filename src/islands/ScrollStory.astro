@@ -1,6 +1,6 @@
 ---
 // Case-study scroll story (docs/storyboards/<slug>.md). Every beat is real HTML in reading order;
-// the script only toggles classes (GSAP ScrollTrigger decides when). With no JS, reduced motion or tier C
+// the script only toggles classes (engine/motion/scroll.ts decides when, from scroll position). With no JS, reduced motion or tier C
 // the page is simply the finished diagram, the prose and the metrics.
 import ArchDiagram from '../components/diagrams/ArchDiagram.astro';
 import ClaimRef from '../components/evidence/ClaimRef.astro';
@@ -59,18 +59,18 @@ const caption = (g: { nodes: [number, number]; proposal: number[] }, last: boole
 </div>
 <script>
   import { reducedMotion } from '../engine/motion/tokens';
+  import { initScrollStory } from '../engine/motion/scroll';
 
   let stop: (() => void) | null = null;
   const release = () => { stop?.(); stop = null; };
 
-  // GSAP is lazy-imported by engine/motion/scroll.ts, only here, only on pages that have a story.
-  document.addEventListener('astro:page-load', async () => {
+  // No animation library (ADR-0014): scroll position in, class toggles out, through the shared scheduler.
+  document.addEventListener('astro:page-load', () => {
     release();
     const root = document.querySelector<HTMLElement>('[data-story]');
     if (!root || reducedMotion()) return;
     try {
-      const { initScrollStory } = await import('../engine/motion/scroll');
-      stop = await initScrollStory(root);
+      stop = initScrollStory(root);
     } catch {
       root.dataset.storyFailed = ''; // back to the finished state, never a half-dimmed diagram
     }

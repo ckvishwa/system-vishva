@@ -44,3 +44,16 @@ export function pipelineState(total: number, groups: Array<{ range: [number, num
 
 /** A connector draws once the node it leads into is on. */
 export const traceOn = (on: boolean[], j: number) => !!on[j + 1];
+
+/** A beat starts when its top reaches 75% of the viewport height and ends when its bottom reaches 45%. */
+export const BEAT_START = 0.75;
+export const BEAT_END = 0.45;
+
+/**
+ * Progress (0..1) through a beat, from its bounding box. Pure, so the scroll story needs no animation
+ * library: scroll position in, progress out, and the same input always gives the same answer in both directions.
+ */
+export function sectionProgress(top: number, height: number, vh: number): number {
+  const span = (BEAT_START - BEAT_END) * vh + height;
+  return Math.max(0, Math.min(1, (BEAT_START * vh - top) / span));
+}

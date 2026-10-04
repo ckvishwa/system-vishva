@@ -1,15 +1,16 @@
 ---
 // ARD §7 idea 2: a metric that can show its source, as a spec-sheet cell (ADR-0013 T1).
-// The chip is the claim's real state from claims.yaml: VERIFIED (has an evidence link) or UNVERIFIED.
+// The chip is the claim's real state from claims.yaml: VERIFIED (has an evidence link) or "evidence pending",
+// shown in the muted colour here. Red UNVERIFIED stays on /status and in the terminal, where it is diagnostic.
 // Phase 2 turns this into the evidence drawer.
 interface Props { claim: { id: string; data: { label: string; display: string; value?: number; evidence: string | null; evidenceNote?: string } } }
 const { claim } = Astro.props;
 const { label, display, evidence, value } = claim.data;
 ---
-<figure class="cell metric" id={`claim-${claim.id}`} data-status={evidence ? 'pass' : 'block'}>
+<figure class="cell metric" id={`claim-${claim.id}`} data-status={evidence ? 'pass' : undefined}>
   <figcaption class="cell-head mono">
     <span class="muted">{label}</span>
-    <span class="chip" data-tone={evidence ? 'pass' : 'block'}>{evidence ? 'VERIFIED' : 'UNVERIFIED'}</span>
+    <span class="chip" data-tone={evidence ? 'pass' : 'pending'}>{evidence ? 'VERIFIED' : 'evidence pending'}</span>
   </figcaption>
   <p class="cell-value">
     {evidence

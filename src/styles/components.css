@@ -22,6 +22,7 @@
 .chip { border: 1px solid currentColor; border-radius: var(--r-0); padding: 1px var(--s-2); font-size: 10px; letter-spacing: 0.08em; }
 .chip[data-tone='pass'], .cell[data-status='pass'] .cell-value { color: var(--c-system); }
 .chip[data-tone='block'], .cell[data-status='block'] .cell-value { color: var(--c-risk); }
+.chip[data-tone='pending'] { color: var(--c-muted); }
 .chip[data-tone='info'], .cell[data-status='info'] .cell-value { color: var(--c-info); }
 .cell-note { font-size: 10px; margin-top: calc(var(--s-2) * -1); }
 @container (max-width: 12rem) {

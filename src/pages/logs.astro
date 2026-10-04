@@ -6,6 +6,7 @@ import build from '../generated/build.json';
 <Base title="Logs">
   <section class="wrap" style="padding-block: var(--s-9)">
     <h1 class="display" data-fx="decrypt">Logs</h1>
+    {build.log.length === 0 && <p class="mono muted" style="margin-top:var(--s-6)">No commit history is available in this build.</p>}
     <ol class="mono feed">
       {build.log.map((l) => <li><span class="muted">{l.date}</span> <span class="info">{l.hash}</span> {l.subject}</li>)}
     </ol>

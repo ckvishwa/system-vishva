@@ -8,14 +8,14 @@ The portfolio is a static-first Astro site where every page ships as HTML and on
 
 **Identity statement (every decision is tested against it):** AI systems engineering with security and reliability as first-class constraints.
 
-The two source plans disagree on the stack (plan 1 says Next.js + Framer Motion + R3F; plan 2 says Astro + GSAP + plain Three.js). This ARD resolves it in favour of plan 2.
+The two source plans disagree on the stack (plan 1 says Next.js + Framer Motion + R3F; plan 2 says Astro + GSAP + plain Three.js). This ARD resolves it in favour of plan 2. (GSAP was later dropped: see ADR-0014.)
 
 | ID | Decision | Rejected alternative | Why |
 | --- | --- | --- | --- |
 | D-01 | Astro + TypeScript, static output | Next.js App Router | Content site; React runtime over every page wastes the 150 KB budget |
 | D-02 | Plain Three.js in a TS module, no R3F | React Three Fiber | One canvas does not justify React + R3F weight |
 | D-03 | CSS + Web Animations API for \~70% of motion | Framer Motion everywhere | Browser-native, zero bundle cost |
-| D-04 | GSAP + ScrollTrigger, lazy-loaded, case-study pages only | GSAP site-wide | Only scroll storytelling needs it |
+| D-04 | ~~GSAP + ScrollTrigger~~ **Superseded by ADR-0014:** scroll story on `input/scroll.ts` + the scheduler, no animation library | GSAP (any scope) | ScrollTrigger keeps its own idle loops (breaks the single frame loop) and costs ~25 KB |
 | D-05 | SVG for every diagram a visitor must read | WebGL diagrams | Readable, selectable, accessible, animatable via stroke-dashoffset |
 | D-06 | Exactly one WebGL canvas, homepage only | Per-section canvases | Mobile GPU and battery |
 | D-07 | Astro View Transitions (ClientRouter) for page moves | Custom SPA router | Native API with built-in fallback |
@@ -115,7 +115,7 @@ system-vishva/
 │   │   │   ├── tokens.ts       # durations, easings — mirrors tokens.css
 │   │   │   ├── reveal.ts       # WAAPI mask reveals, line tracing
 │   │   │   ├── count.ts        # metric count-up
-│   │   │   └── scroll.ts       # GSAP lazy import + ScrollTrigger setup
+│   │   │   └── scroll.ts       # scroll story: scroll.ts input + scheduler (ADR-0014)
 │   │   ├── transitions/        # per-project signature exits (see §7)
 │   │   └── cursor.ts           # context cursor, pointer:fine only
 │   │
@@ -161,11 +161,11 @@ The site has exactly one frame loop (`scheduler.ts`); every other row below is a
 | Idle drift | Home | Page load | After 6 s with no input, then sleeps until input | Off |
 | Pointer listener | Home, Systems | `pointer: fine` and island mounted | Island unmounted | Passive, no render |
 | Gyro listener | Home, mobile | User grants permission (iOS) or API present (Android) | Hero off-screen or tab hidden | Off |
-| ScrollTrigger | Case studies | Story section enters viewport (`client:visible`) | Page navigation → `ScrollTrigger.killAll()` | Sections render final state |
+| Scroll story | Case studies | Scroll or resize wakes it; one measurement per beat, then it sleeps | Page navigation → `astro:before-swap` removes the subscription and listeners | Sections render final state |
 | Cursor follower | All pages, desktop | `pointer: fine` and tier A | Pointer leaves window | Native cursor |
 | Count-up | Metric blocks | Block enters viewport | Count finishes (≤ 800 ms) | Final number shown |
 
-**Cleanup rule:** every island exports `mount()` and `destroy()`. Astro fires `astro:before-swap` on navigation; `destroy()` must cancel listeners, kill ScrollTriggers, and call `renderer.dispose()` plus geometry/material disposal. A leaked WebGL context after 10 navigations is a release blocker.
+**Cleanup rule:** every island exports `mount()` and `destroy()`. Astro fires `astro:before-swap` on navigation; `destroy()` must cancel listeners, remove scheduler subscriptions, and call `renderer.dispose()` plus geometry/material disposal. A leaked WebGL context after 10 navigations is a release blocker.
 
 ## 6. Loopholes in the two plans
 
@@ -182,7 +182,7 @@ Twelve gaps would break the site or contradict its own principles if built as wr
 | L-07 | "Every project gets its own motion identity" vs "one consistent motion system" | Visual chaos | Shared primitives (trace, mask, count, node) + one signature exit per project (§7) |
 | L-08 | Lenis suggested while "custom scroll hijacking" is banned | Self-contradiction, jank on mobile | No Lenis in V1 (D-09) |
 | L-09 | Custom system cursor has no touch or keyboard story | Lost affordance on phones, a11y fail | Cursor only on `pointer: fine` + tier A; all labels also exist as visible text and focus styles |
-| L-10 | Scroll-pinned GSAP sections hide content from screen readers and keyboard users | Inaccessible case studies | Every storyboard step is real HTML in reading order; GSAP only animates it |
+| L-10 | Scroll-pinned sections hide content from screen readers and keyboard users | Inaccessible case studies | Every storyboard step is real HTML in reading order; the script only toggles classes |
 | L-11 | Lab statuses ("ACTIVE") go stale silently | Abandoned work looks dishonest | `lastTouched` date required in schema; status auto-shows "DORMANT" after 90 days |
 | L-12 | A 30-second recruiter skim was never designed for | Great site, lost interview | `/plain` recruiter mode + one-page PDF link in nav (§7) |
 
@@ -213,7 +213,7 @@ A build that misses any hard budget does not deploy. The gate runs in `.github/w
 | --- | --- | --- | --- |
 | Pre-LCP JavaScript | < 60 KB gzipped (Three.js excluded, loads after) | size-limit | Hard |
 | Total JS, home | < 250 KB gzipped incl. Three.js | size-limit | Hard |
-| Total JS, case study | < 90 KB gzipped incl. GSAP | size-limit | Hard |
+| Total JS, case study | < 90 KB gzipped | size-limit | Hard |
 | LCP, mobile throttled | < 2.5 s | Lighthouse CI | Hard |
 | CLS | < 0.02 | Lighthouse CI | Hard |
 | Hero FPS, mid Android | ≥ 50 tier B, ≥ 30 tier C-fallback | Manual + Playwright trace | Soft |

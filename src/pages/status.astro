@@ -62,6 +62,7 @@ const history = build.log.slice(0, 15);
 
   <section class="wrap sec panel" aria-labelledby="hist-h">
     <h2 id="hist-h" class="mono muted">Build history</h2>
+    {history.length === 0 && <p class="mono muted">No commit history is available in this build.</p>}
     <ol class="mono feed">
       {history.map((l) => <li><span class="muted">{l.date}</span> <span class="info">{l.hash}</span> {l.subject}</li>)}
     </ol>

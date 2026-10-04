@@ -45,7 +45,5 @@ a deployed build includes the size figures.
   verdict explains itself on the page that carries the numbers.
 - `keys.ts` is the single keyboard-shortcut listener, for the terminal only. Effects still read input only through
   pointer.ts, gyro.ts and scroll.ts.
-- GSAP's ScrollTrigger keeps three idle loops alive (a perpetual requestAnimationFrame, the GSAP ticker and a 250 ms setInterval
-  that schedules frames). `engine/motion/scroll.ts` starves them while it initialises, and an e2e test fails if any returns.
-  Dropping ScrollTrigger for a scheduler-driven progress calculation would remove the workaround and about 25 KB gz; that would
-  amend ADR-0004 and is left as a decision.
+- GSAP's ScrollTrigger kept an idle case study rendering ~60 frames a second. Phase 1.5 starved its loops with a workaround; ADR-0014
+  removes ScrollTrigger and GSAP entirely, so no workaround remains.

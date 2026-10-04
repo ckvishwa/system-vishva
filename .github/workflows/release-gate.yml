@@ -12,15 +12,23 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
-      - name: Claims must have evidence
-        run: npx tsx scripts/verify-claims.ts --strict
-      - name: Unit tests (engine)
-        run: npm test
-      - name: Build
-        run: npm run build
-      - name: JS budgets
-        run: npm run size
+
+      # One command runs the whole gate: strict claims, unit tests, build, size budgets, and a SECOND build.
+      # The second build is deliberate. The first build cannot know the JS sizes (they exist only after a build), so
+      # the second one bakes the measured sizes into /status and the homepage strip. Whatever is deployed must be
+      # the output of this command, never of a plain `astro build`, or the status cells would lag a build behind.
+      # Vercel does the same: vercel.json sets buildCommand to `npm run gate`, so its deploy is the gate's output.
+      - name: Release gate (npm run gate)
+        run: npm run gate
+
       - name: Lighthouse budgets
         run: npx @lhci/cli@latest autorun
-      - name: E2E (reduced motion, nav, context leaks)
+      - name: E2E (reduced motion, nav, idle frames, context leaks, terminal, status)
         run: npx playwright install --with-deps chromium && npm run test:e2e
+
+      # Hand the exact gated output to anything that deploys: it is the gate's second build, unmodified.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site-dist
+          path: dist
+          if-no-files-found: error

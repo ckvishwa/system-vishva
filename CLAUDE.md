@@ -9,7 +9,7 @@ Site must make a reviewer think "this person thinks in systems", not "this perso
 - ONE frame loop: src/engine/scheduler.ts. Never call requestAnimationFrame anywhere else.
 - ONE WebGL canvas (#system-environment), homepage only. Plain Three.js in a TS module; no React Three Fiber.
 - Three.js dynamically imported AFTER first paint (requestIdleCallback or idle timeout). Never in pre-LCP JS.
-- GSAP lazy-imported only by the ScrollStory island, case-study pages only.
+- No animation library (ADR-0014, supersedes ADR-0004): the scroll story runs on input/scroll.ts + the scheduler. GSAP is not a dependency; do not add it back.
 - Diagrams a visitor must read are SVG, never WebGL.
 - Colours only from src/styles/tokens.css. Accents semantic: --c-system = operational/pass, --c-risk = risk/block, --c-info = information. Border radius 0/2/4px only.
 - No new hex values, no gradients, no glow, no decorative particles, no scroll hijacking, no Lenis, no fake terminal output, no invented metrics.
@@ -41,7 +41,7 @@ Grain is never a fixed full-screen layer: it is applied to the hero and case-stu
 - The terminal is lazy (6 KB gz budget) with instant output: no typing animation, no boot sequence, no window chrome.
 - Rejected, never add: neon glow or text-glow; cyan/magenta/yellow cyberpunk palettes; terminal window-chrome dots; "hack the planet" /
   "EXECUTE" / "TERMINATE" copy; datastream or falling-character effects; icon packs (no icons, type and rules only).
-- GSAP must not keep any idle loop alive (see scroll.ts). Every page except the homepage hero idles at 0 frames; e2e enforces it.
+- Every page except the homepage hero idles at 0 frames, case studies included; e2e enforces it. No library may run a loop of its own.
 
 ## Accessibility / motion
 - prefers-reduced-motion or tier C: no WebGL, no scroll animation (final state shown), transitions are instant swap.

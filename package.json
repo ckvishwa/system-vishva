@@ -12,9 +12,10 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "size": "size-limit",
-    "gate": "tsx scripts/verify-claims.ts --strict && npm run test:report && npm run build && npm run size:report && npm run build",
+    "gate": "tsx scripts/gate.ts",
     "size:report": "tsx scripts/size-report.ts",
-    "test:report": "vitest run --reporter=default --reporter=json --outputFile.json=src/generated/tests.json"
+    "test:report": "vitest run --reporter=default --reporter=json --outputFile.json=src/generated/tests.json",
+    "preview:lan": "astro preview --host"
   },
   "dependencies": {
     "@astrojs/mdx": "^8.0.2",
@@ -22,7 +23,6 @@
     "@fontsource-variable/inter-tight": "^5.3.0",
     "@fontsource-variable/jetbrains-mono": "^5.3.0",
     "astro": "^7.3.5",
-    "gsap": "^3.15.0",
     "three": "^0.186.1"
   },
   "devDependencies": {

@@ -16,11 +16,15 @@ import { join } from 'node:path';
 const git = (cmd: string) => { try { return execSync(`git ${cmd}`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch { return ''; } };
 const readJson = <T>(p: string): T | null => { try { return existsSync(p) ? (JSON.parse(readFileSync(p, 'utf8')) as T) : null; } catch { return null; } };
 
-const commit = git('rev-parse --short HEAD') || 'local';
 const today = new Date().toISOString().slice(0, 10);
-const log = (git('log -n 30 --pretty=format:"%h|%ad|%s" --date=short') || '')
+const vercelSha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7);
+const commit = git('rev-parse --short HEAD') || vercelSha || 'local';
+let log = (git('log -n 30 --pretty=format:"%h|%ad|%s" --date=short') || '')
   .split('\n').filter(Boolean)
   .map((l) => { const [hash, date, ...s] = l.split('|'); return { hash, date, subject: s.join('|') }; });
+// Some build environments have no git history. Use what the platform really tells us (the deployed commit),
+// otherwise leave the history empty. Never invent an entry.
+if (!log.length && vercelSha) log = [{ hash: vercelSha, date: today, subject: (process.env.VERCEL_GIT_COMMIT_MESSAGE ?? '').split('\n')[0] || 'deployed commit' }];
 
 type Status = 'pass' | 'block';
 interface Gate { id: string; label: string; status: Status; value: string; detail: string; measuredAt?: string }
@@ -59,6 +63,6 @@ writeFileSync('src/generated/build.json', JSON.stringify({
   pages,
   tests: testsInfo,
   js,
-  log: log.length ? log : [{ hash: commit, date: today, subject: 'Initial scaffold' }],
+  log,
 }, null, 2));
 console.log(`manifest: ${commit}, gate ${gate}, ${gates.length} checks, ${pages} pages`);

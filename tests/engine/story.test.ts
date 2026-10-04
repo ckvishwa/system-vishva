@@ -46,3 +46,30 @@ describe('scroll story maths', () => {
     expect(traceOn(on, 2)).toBe(false);  // Interpreter not yet on
   });
 });
+
+import { sectionProgress, BEAT_START, BEAT_END } from '../../src/engine/motion/story';
+
+describe('section progress from a bounding box (no animation library)', () => {
+  const vh = 800, h = 480;
+  it('is 0 until the beat top reaches 75% of the viewport', () => {
+    expect(sectionProgress(vh * BEAT_START, h, vh)).toBe(0);
+    expect(sectionProgress(vh, h, vh)).toBe(0);
+    expect(sectionProgress(5000, h, vh)).toBe(0);
+  });
+  it('is 1 once the beat bottom reaches 45% of the viewport, and stays 1 beyond', () => {
+    expect(sectionProgress(vh * BEAT_END - h, h, vh)).toBeCloseTo(1);
+    expect(sectionProgress(-5000, h, vh)).toBe(1);
+  });
+  it('rises monotonically as the beat scrolls up', () => {
+    let prev = -1;
+    for (let top = vh; top > -h; top -= 10) { const p = sectionProgress(top, h, vh); expect(p).toBeGreaterThanOrEqual(prev); prev = p; }
+  });
+  it('is a pure function of position: scrolling back gives the same progress', () => {
+    expect(sectionProgress(300, h, vh)).toBe(sectionProgress(300, h, vh));
+    expect(sectionProgress(500, h, vh)).toBeLessThan(sectionProgress(300, h, vh));
+  });
+  it('matches the old ScrollTrigger range: start top 75%, end bottom 45%', () => {
+    expect(sectionProgress(0.6 * vh, h, vh)).toBeCloseTo((0.75 * vh - 0.6 * vh) / (0.3 * vh + h));
+  });
+  it('handles a degenerate zero-height beat without NaN', () => expect(Number.isFinite(sectionProgress(300, 0, vh))).toBe(true));
+});

@@ -135,3 +135,16 @@ test('every page other than the homepage hero idles at 0 frames', async ({ page 
     expect(await page.evaluate(() => (window as any).__frames), r).toBe(0);
   }
 });
+
+test('public case-study metrics say "evidence pending" in the muted colour, not red', async ({ page }) => {
+  await page.goto('/work/rexi/');
+  const chips = page.locator('.metric .chip');
+  await expect(chips.first()).toHaveText('evidence pending');
+  const colours = await chips.evaluateAll((els) => els.map((e) => getComputedStyle(e).color));
+  const muted = await page.evaluate(() => { const t = document.createElement('i'); t.style.color = 'var(--c-muted)'; document.body.append(t); const c = getComputedStyle(t).color; t.remove(); return c; });
+  const risk = await page.evaluate(() => { const t = document.createElement('i'); t.style.color = 'var(--c-risk)'; document.body.append(t); const c = getComputedStyle(t).color; t.remove(); return c; });
+  colours.forEach((c) => { expect(c).toBe(muted); expect(c).not.toBe(risk); });
+  // red stays where it is diagnostic
+  await page.goto('/status/');
+  await expect(page.locator('section[aria-labelledby="claims-h"] .risk').first()).toHaveText('UNVERIFIED');
+});

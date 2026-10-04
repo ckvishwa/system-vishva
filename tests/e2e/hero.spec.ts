@@ -141,18 +141,25 @@ test('iOS-style gyro: "Enable depth" is labelled, keyboard reachable, and asks p
   await ctx.close();
 });
 
-test('case study idles at 0 frames, before and after scrolling and resizing (GSAP must not keep a loop alive)', async ({ page }) => {
+test('case study renders 0 animation frames after 6 s with no input, and after scrolling and resizing', async ({ page }) => {
   await instrument(page);
   await page.goto('/work/rexi/');
-  const idleFrames = async () => {
-    await page.waitForTimeout(2200);
+  const idleFrames = async (settle: number) => {
+    await page.waitForTimeout(settle);
     await page.evaluate(() => { (window as any).__frames = 0; });
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2000);
     return page.evaluate(() => (window as any).__frames);
   };
-  expect(await idleFrames()).toBe(0);
+  expect(await idleFrames(7500)).toBe(0); // same check as the homepage
   for (const y of [300, 700, 1100, 400]) { await page.evaluate((top) => scrollTo(0, top), y); await page.waitForTimeout(200); }
-  expect(await idleFrames()).toBe(0);
+  expect(await idleFrames(1500)).toBe(0);
   await page.setViewportSize({ width: 900, height: 700 });
-  expect(await idleFrames()).toBe(0);
+  expect(await idleFrames(1500)).toBe(0);
+});
+
+test('the scroll story still lights nodes after a resize (viewport changes re-measure)', async ({ page }) => {
+  await page.goto('/work/rexi/');
+  await page.evaluate(() => scrollTo(0, 1500));
+  await page.setViewportSize({ width: 1000, height: 600 });
+  await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('[data-node]')].every((n) => n.classList.contains('is-active')))).toBe(true);
 });
