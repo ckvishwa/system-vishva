@@ -1,0 +1,11 @@
+---
+// ADR-0013 T4: structure made visible. Tiny mono column indices along the top edge, counting the cells of the
+// 48px grid drawn behind the page (.grid-bg), so each number sits on a real grid line: 00 04 08 12 ...
+// Decorative and static. Put it inside a positioned element whose grid starts at its left edge.
+interface Props { step?: number; max?: number }
+const { step = 4, max = 30 } = Astro.props;
+const marks = Array.from({ length: Math.floor(max / step) + 1 }, (_, i) => i * step);
+---
+<div class="coords mono" aria-hidden="true">
+  {marks.map((n) => <span style={`left:${n * 48}px`}>{String(n).padStart(2, '0')}</span>)}
+</div>

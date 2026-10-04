@@ -41,3 +41,23 @@
 .ledger th, .ledger td { text-align: left; font-weight: 400; padding: var(--s-3) var(--s-4) var(--s-3) 0; border-bottom: 1px solid var(--c-rule); vertical-align: baseline; }
 .ledger thead th { color: var(--c-muted); font-size: var(--t-xs); border-bottom-color: var(--c-text); }
 .ledger tbody th { color: var(--c-text); }
+
+/* ---- T4 grid coordinates ---- */
+.coords { position: absolute; inset: 0 0 auto 0; height: 14px; overflow: hidden; pointer-events: none; font-size: 9px; color: var(--c-muted); }
+.coords span { position: absolute; top: 2px; padding-left: 3px; }
+
+/* ---- T2 hard offset shadow: an affordance, so it exists only on interactive elements (links styled as
+   blocks, buttons, records) and never on static content. .hard rests with the shadow and presses into it;
+   .hard-lift (wide rows and records) shows it on hover/focus and lifts. Snaps, no easing. ---- */
+.hard { box-shadow: 4px 4px 0 var(--c-text); }
+.hard:is(:hover, :focus-visible) { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--c-text); }
+.hard-lift:is(:hover, :focus-visible) { transform: translate(-4px, -4px); box-shadow: 4px 4px 0 var(--c-text); }
+/* Reduced motion and tier C: no translate. The shadow changes colour instead, so the state is still visible. */
+@media (prefers-reduced-motion: reduce) {
+  .hard:is(:hover, :focus-visible), .hard-lift:is(:hover, :focus-visible) { transform: none; box-shadow: 4px 4px 0 var(--c-system); }
+}
+html[data-tier='C'] :is(.hard, .hard-lift):is(:hover, :focus-visible) { transform: none; box-shadow: 4px 4px 0 var(--c-system); }
+
+/* ---- T3 the inverted block: at most ONE per page, for the single statement that matters most. Never decoration. ---- */
+.inverted { background: var(--c-text); color: var(--c-bg); }
+.inverted ::selection, .inverted::selection { background: var(--c-bg); color: var(--c-text); }

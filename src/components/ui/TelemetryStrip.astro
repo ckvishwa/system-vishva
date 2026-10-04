@@ -6,7 +6,7 @@ import build from '../../generated/build.json';
 const checks = build.gates ?? [];
 const passing = checks.filter((g: any) => g.status === 'pass').length;
 ---
-<a class="strip" href="/status/" aria-label="System status: open the full status page" data-strip>
+<a class="strip hard-lift" href="/status/" aria-label="System status: open the full status page" data-strip>
   <div class="cells">
     <Cell label="Commit" value={build.commit} />
     <Cell label="Gate" value={`${passing}/${checks.length} checks`} status={build.gate === 'pass' ? 'pass' : 'block'} chip={build.gate === 'pass' ? 'PASS' : 'BLOCK'} />

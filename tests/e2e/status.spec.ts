@@ -66,3 +66,59 @@ test('the homepage telemetry strip is one row of real cells and opens /status', 
   await strip.click();
   await expect(page).toHaveURL(/\/status\/$/);
 });
+
+const routes = ['/', '/work/', '/work/rexi/', '/work/maltrace/', '/lab/', '/systems/', '/status/', '/about/', '/contact/', '/plain/', '/logs/'];
+
+test('T3: at most one inverted block on any page', async ({ page }) => {
+  for (const r of routes) {
+    await page.goto(r);
+    expect(await page.locator('.inverted').count(), r).toBeLessThanOrEqual(1);
+  }
+  await page.goto('/');
+  await expect(page.locator('.inverted')).toHaveText('Model proposes. Software authorizes.');
+  await page.goto('/work/rexi/');
+  await expect(page.locator('.inverted')).toContainText('LLMs are good at language.');
+});
+
+test('T2: hard shadows exist only on interactive elements, and none at rest on static content', async ({ page }) => {
+  for (const r of routes) {
+    await page.goto(r);
+    const offenders = await page.evaluate(() =>
+      [...document.querySelectorAll('body *')]
+        .filter((e) => getComputedStyle(e).boxShadow !== 'none' && !['A', 'BUTTON'].includes(e.tagName))
+        .map((e) => e.tagName + '.' + e.className));
+    expect(offenders, r).toEqual([]);
+  }
+});
+
+test('T2: reduced motion removes the hover translate', async ({ browser }) => {
+  const ctx = await browser.newContext({ reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  await page.goto('/');
+  const enter = page.locator('.enter');
+  await enter.hover();
+  expect(await enter.evaluate((e) => getComputedStyle(e).transform)).toBe('none');
+  await ctx.close();
+});
+
+test('T2: on hover a button presses into its shadow', async ({ page }) => {
+  await page.addInitScript(() => { Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 }); });
+  await page.goto('/');
+  const enter = page.locator('.enter');
+  expect(await enter.evaluate((e) => getComputedStyle(e).boxShadow)).toMatch(/4px 4px 0px/);
+  await enter.hover();
+  await expect.poll(() => enter.evaluate((e) => new DOMMatrix(getComputedStyle(e).transform).m41)).toBe(4);
+});
+
+test('T4: grid coordinates sit on the 48px grid of the hero and the status page', async ({ page }) => {
+  for (const [path, host] of [['/', '.hero-scene'], ['/status/', '.head']] as const) {
+    await page.goto(path);
+    const r = await page.evaluate((sel) => {
+      const h = document.querySelector(sel)!.getBoundingClientRect();
+      return [...document.querySelectorAll(`${sel} .coords span`)].map((s) => ({ t: s.textContent, dx: Math.round(s.getBoundingClientRect().left - h.left) }));
+    }, host);
+    expect(r.map((x) => x.t).slice(0, 4), path).toEqual(['00', '04', '08', '12']);
+    r.forEach((x, i) => expect(x.dx % 48, `${path} ${x.t}`).toBe(0));
+    expect(r[1].dx - r[0].dx).toBe(192);
+  }
+});

@@ -23,7 +23,7 @@ const lab = await getCollection('lab');
       <p class="mono muted">AI systems / security / reliability</p>
       <h1 class="display" data-fx="decrypt">Vishva<br />Teja</h1>
       <p class="h2 claim" data-fx="redact">Building systems where probabilistic models don't control deterministic truth.</p>
-      <a class="mono enter" href="#systems">Enter the system</a>
+      <a class="mono enter hard" href="#systems">Enter the system</a>
     </div>
   </section>
 
@@ -36,9 +36,14 @@ const lab = await getCollection('lab');
     ))}
   </section>
 
+  <!-- T3: the one inverted block on this page. It is the first principle, so it is not repeated in the list below. -->
+  <section class="statement inverted" aria-label="Principle">
+    <p class="wrap h1">{principles[0]}</p>
+  </section>
+
   <section class="wrap block sec" aria-labelledby="ops">
     <h2 id="ops" class="mono muted">Operating principles</h2>
-    <ul class="principles">{principles.map((p) => <li class="h1">{p}</li>)}</ul>
+    <ul class="principles">{principles.slice(1).map((p) => <li class="h1">{p}</li>)}</ul>
   </section>
 
   <section class="wrap block sec" aria-labelledby="labh">
@@ -57,6 +62,8 @@ const lab = await getCollection('lab');
   .claim { max-width: 24ch; }
   .enter { color: var(--c-system); justify-self: start; border: 1px solid var(--c-system); padding: var(--s-2) var(--s-4); }
   .enter:hover { background: var(--c-system); color: var(--c-bg); }
+  .statement { margin-top: var(--s-9); padding-block: var(--s-8); }
+  .statement p { max-width: 20ch; }
   .block { padding-block: var(--s-9) 0; display: grid; gap: var(--s-5); }
   .principles { list-style: none; display: grid; gap: var(--s-4); }
   .principles li { border-top: 1px solid var(--c-rule); padding-top: var(--s-4); }

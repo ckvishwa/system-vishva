@@ -3,6 +3,7 @@
 // the browser (the render panel). Nothing here is typed in. Panels whose data is missing are left out.
 import Base from '../layouts/Base.astro';
 import Cell from '../components/ui/Cell.astro';
+import GridCoords from '../components/ui/GridCoords.astro';
 import { getCollection } from 'astro:content';
 import { shownStatus } from '../content/lab-status';
 import build from '../generated/build.json';
@@ -14,7 +15,8 @@ const day = (iso?: string | null) => (iso ? iso.slice(0, 10) : undefined);
 const history = build.log.slice(0, 15);
 ---
 <Base title="Status">
-  <section class="wrap head" data-grid-coords>
+  <section class="wrap head grid-bg" data-grid-coords>
+    <GridCoords />
     <p class="mono muted">System status</p>
     <h1 class="display" data-fx="decrypt">Status</h1>
     <p class="mono muted">Generated at build from commit {build.commit} on {build.date}. Test and size figures come from the most recent run and show when they were measured.</p>
@@ -111,7 +113,7 @@ const history = build.log.slice(0, 15);
   document.addEventListener('astro:page-load', paint);
 </script>
 <style>
-  .head { padding-block: var(--s-9) var(--s-7); display: grid; gap: var(--s-4); }
+  .head { position: relative; padding-block: var(--s-9) var(--s-7); display: grid; gap: var(--s-4); }
   .panel { padding-block: var(--s-6) 0; margin-top: var(--s-8); display: grid; gap: var(--s-5); }
   .scroll { overflow-x: auto; }
   .feed { list-style: none; display: grid; gap: var(--s-2); font-size: var(--t-sm); }

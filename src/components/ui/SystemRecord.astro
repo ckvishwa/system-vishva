@@ -4,7 +4,7 @@ interface Props { index: number; slug: string; title: string; category: string; 
 const { index, slug, title, category, pipeline, metrics, signature } = Astro.props;
 ---
 <div class="record-cq">
-<a class="record" href={`/work/${slug}/`} data-cursor="open" data-sig={signature}>
+<a class="record hard-lift" href={`/work/${slug}/`} data-cursor="open" data-sig={signature}>
   <span class="idx mono muted">{String(index).padStart(2, '0')}</span>
   <span class="title h1" transition:name={`title-${slug}`} data-sig-title>{title}</span>
   <span class="cat">{category}</span>

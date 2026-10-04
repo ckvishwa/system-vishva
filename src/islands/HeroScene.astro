@@ -3,6 +3,7 @@
 // engine/scene/hero.ts lazy-loads SystemScene (and Three.js) after load for tiers A/B and
 // cross-fades to the canvas once its first frame has rendered.
 import { parse } from 'yaml';
+import GridCoords from '../components/ui/GridCoords.astro';
 import raw from '../content/systems-graph.yaml?raw';
 const g = parse(raw) as { nodes: { id: string; label: string; x: number; y: number }[]; edges: [string, string][] };
 const pos = Object.fromEntries(g.nodes.map((n) => [n.id, n]));
@@ -10,6 +11,7 @@ const graph = JSON.stringify({ nodes: g.nodes, edges: g.edges });
 ---
 <div class="hero-scene" aria-hidden="true" data-graph={graph}>
   <div class="hero-grid grid-bg" data-depth="0.2"></div>
+  <GridCoords />
   <div class="plot" data-depth="0.5">
     <svg class="edges" viewBox="0 0 100 100" preserveAspectRatio="none">
       {g.edges.map(([a, b]) => <line x1={pos[a].x} y1={pos[a].y} x2={pos[b].x} y2={pos[b].y} vector-effect="non-scaling-stroke" />)}
@@ -26,7 +28,7 @@ const graph = JSON.stringify({ nodes: g.nodes, edges: g.edges });
     <span class="hud-xy" data-hud-xy></span>
   </div>
 </div>
-<button type="button" class="depth-chip mono" data-depth-chip hidden>Enable depth</button>
+<button type="button" class="depth-chip hard mono" data-depth-chip hidden>Enable depth</button>
 <script>
   import { currentTier } from '../engine/tier';
   import { mountHero } from '../engine/scene/hero';
@@ -46,7 +48,8 @@ const graph = JSON.stringify({ nodes: g.nodes, edges: g.edges });
 </script>
 <style>
   .hero-scene { position: absolute; inset: 0; z-index: var(--z-scene); pointer-events: none; }
-  .hero-grid { position: absolute; inset: -5%; }
+  /* One 48px cell of overscan on every side, so the grid origin is a multiple of 48 from the hero edge and the T4 coordinates sit on real lines. */
+  .hero-grid { position: absolute; inset: -48px; }
   /* E1: the graph lives in the upper right; the lower left belongs to the text. */
   .plot { position: absolute; inset: 10% 6% 34% 44%; }
   @media (max-width: 720px) { .plot { inset: 8% 6% 52% 6%; } }
