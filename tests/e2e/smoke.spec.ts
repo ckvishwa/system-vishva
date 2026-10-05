@@ -18,3 +18,10 @@ test('unknown route fails closed', async ({ page }) => {
   await page.goto('/nope');
   await expect(page.getByText('This route is not in the allowlist.')).toBeVisible();
 });
+
+test('/plain has no effects: no data-fx element, tier C, no armed mode', async ({ page }) => {
+  await page.goto('/plain/');
+  await expect(page.locator('[data-fx]')).toHaveCount(0);
+  await expect(page.locator('html')).toHaveAttribute('data-tier', 'C');
+  await expect(page.locator('html')).not.toHaveAttribute('data-fx-mode', /.+/);
+});

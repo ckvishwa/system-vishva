@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { parse } from 'yaml';
 import { instrument, live } from './helpers';
+
+// What the Rexi case study shows is whatever the ledger says, in the order rexi.mdx lists the claims.
+const ledger = parse(readFileSync('src/content/claims/claims.yaml', 'utf8')) as { id: string; display: string }[];
+const rexiDisplays = ['rexi-tests', 'rexi-pricing-parity', 'rexi-golden-evals'].map((id) => ledger.find((c) => c.id === id)!.display);
 
 test('homepage renders 0 animation frames after the 6 s drift window, with no input', async ({ page }) => {
   await instrument(page);
@@ -103,7 +109,7 @@ test('rexi story: reduced motion shows the final state, with all content in the 
   const traces = await page.evaluate(() => [...document.querySelectorAll('[data-trace]')].map((n) => getComputedStyle(n).strokeDashoffset));
   traces.forEach((o) => expect(parseFloat(o)).toBe(0));
   await expect(page.getByText('LLMs are good at language.')).toBeVisible();
-  await expect(page.getByText('323+')).toBeVisible();
+  await expect(page.getByText(rexiDisplays[0], { exact: true }).first()).toBeVisible();
   await ctx.close();
 });
 
@@ -114,7 +120,7 @@ test('rexi metrics count up and land on the exact text already in the HTML', asy
   await page.evaluate(() => scrollTo(0, document.body.scrollHeight));
   await page.waitForTimeout(2000);
   expect(await page.locator('[data-count]').allTextContents()).toEqual(before);
-  expect(before).toEqual(['323+', '50/50', '71']);
+  expect(before).toEqual(rexiDisplays);
 });
 
 test('iOS-style gyro: "Enable depth" is labelled, keyboard reachable, and asks permission from the tap', async ({ browser }) => {

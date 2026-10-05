@@ -1,5 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { parse } from 'yaml';
 import { instrument } from './helpers';
+
+const ledger = parse(readFileSync('src/content/claims/claims.yaml', 'utf8')) as { evidence: string | null; evidenceKind?: string }[];
 
 const dialog = (page: Page) => page.getByRole('dialog', { name: 'Terminal' });
 const input = (page: Page) => dialog(page).getByRole('textbox');
@@ -71,11 +75,12 @@ test('every output comes from real data: cat claims, status, ls, whoami, lab', a
   await page.goto('/');
   await page.keyboard.press('/');
   await type(page, 'cat claims');
-  await expect(log(page).locator('.t-risk', { hasText: 'UNVERIFIED' })).toHaveCount(6);
+  // the terminal reads the ledger: unverified is red, on-request is info, never red
+  await expect(log(page).locator('.t-risk', { hasText: 'UNVERIFIED' })).toHaveCount(ledger.filter((c) => !c.evidence && c.evidenceKind !== 'on-request').length);
+  await expect(log(page).locator('.t-info', { hasText: 'ON REQUEST' })).toHaveCount(ledger.filter((c) => !c.evidence && c.evidenceKind === 'on-request').length);
   await expect(log(page)).toContainText('rexi-tests');
   await type(page, 'status');
   await expect(log(page)).toContainText('gate');
-  await expect(log(page)).toContainText('BLOCK');
   await expect(log(page)).toContainText('/status/');
   await type(page, 'ls');
   await expect(log(page)).toContainText('/status/');

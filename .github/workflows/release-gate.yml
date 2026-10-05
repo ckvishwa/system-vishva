@@ -4,6 +4,12 @@ on:
   push: { branches: [main] }
   pull_request:
 jobs:
+  # One command runs the whole gate: strict claims, unit tests, build, size budgets, a SECOND build, the security-header
+  # check, and the --online evidence check.
+  # The second build is deliberate. The first build cannot know the JS sizes (they exist only after a build), so
+  # the second one bakes the measured sizes into /status and the homepage strip. Whatever is deployed must be
+  # the output of this command, never of a plain `astro build`, or the status cells would lag a build behind.
+  # Vercel does the same: vercel.json sets buildCommand to `npm run gate`, so its deploy is the gate's output.
   gate:
     runs-on: ubuntu-latest
     steps:
@@ -12,23 +18,40 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
-
-      # One command runs the whole gate: strict claims, unit tests, build, size budgets, a SECOND build, the security-header check, and the --online evidence check.
-      # The second build is deliberate. The first build cannot know the JS sizes (they exist only after a build), so
-      # the second one bakes the measured sizes into /status and the homepage strip. Whatever is deployed must be
-      # the output of this command, never of a plain `astro build`, or the status cells would lag a build behind.
-      # Vercel does the same: vercel.json sets buildCommand to `npm run gate`, so its deploy is the gate's output.
       - name: Release gate (npm run gate)
         run: npm run gate -- --online
-
-      - name: Lighthouse budgets
-        run: npx @lhci/cli@latest autorun
-      - name: E2E (reduced motion, nav, idle frames, context leaks, terminal, status, headers enforced)
-        run: npx playwright install --with-deps chromium && npm run test:e2e
-
-      # Hand the exact gated output to anything that deploys: it is the gate's second build, unmodified.
+      # Hand the exact gated output to the jobs below and to anything that deploys: the gate's second build, unmodified.
       - uses: actions/upload-artifact@v4
         with:
           name: site-dist
           path: dist
           if-no-files-found: error
+
+  # e2e and lighthouse are separate jobs so one never hides the other. Both are required.
+  e2e:
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 50 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with: { name: site-dist, path: dist }
+      - run: npx playwright install --with-deps chromium
+      - name: E2E (reduced motion, nav, idle frames, context leaks, terminal, status, headers enforced)
+        run: npm run test:e2e
+
+  lighthouse:
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with: { name: site-dist, path: dist }
+      - name: Lighthouse budgets
+        run: npx @lhci/cli@latest autorun

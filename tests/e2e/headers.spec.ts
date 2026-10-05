@@ -63,8 +63,10 @@ async function underPolicy(page: Page) {
   const headers: Record<string, string> = {};
   for (const h of rule('/(.*)')) headers[h.key.toLowerCase()] = h.key === 'Content-Security-Policy' ? h.value.replace('; upgrade-insecure-requests', '') : h.value; // http://localhost is the test origin
   await page.route('**/*', async (route) => {
-    const res = await route.fetch();
-    await route.fulfill({ response: res, headers: { ...res.headers(), ...headers } });
+    try {
+      const res = await route.fetch();
+      await route.fulfill({ response: res, headers: { ...res.headers(), ...headers } });
+    } catch { /* the page navigated away while this request was in flight; nothing to fulfil */ }
   });
   await page.addInitScript(() => {
     (window as any).__csp = [];
