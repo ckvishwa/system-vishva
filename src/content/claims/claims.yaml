@@ -1,40 +1,57 @@
-# ARD D-10 — the evidence ledger. Fill `evidence` with a link a reviewer can open:
-# test run, commit, eval file, notebook. `npm run gate` fails while any is null.
+# ARD D-10 — evidence ledger
+# evidenceKind (ADR-0015): public | self-hosted | on-request. measuredOn is left out wherever no date was supplied.
+
 - id: rexi-tests
   label: Automated tests
-  value: 323
-  display: "323+"
+  value: 1020
+  display: "1,020"
   project: rexi
   evidence: null
-  evidenceNote: "TODO: link pytest run or CI badge"
+  evidenceKind: on-request
+  evidenceNote: "Last verified 1,020 passed on the private repo. The full suite is being re-captured; output available on request."
+
 - id: rexi-pricing-parity
   label: Pricing parity cases
   value: 50
   display: "50/50"
   project: rexi
-  evidence: null
+  evidence: "/evidence/rexi/pricing-parity-summary.txt"
+  evidenceKind: self-hosted
+  evidenceNote: "Pricing parity run: 50 passed in 0.20s. Aggregate result only; Lakewood source remains private."
+  measuredOn: "2026-10-05"
+
 - id: rexi-golden-evals
-  label: Golden evals
+  label: Golden evals (baseline set)
   value: 71
-  display: "71"
+  display: "71 baseline"
   project: rexi
   evidence: null
+  evidenceKind: on-request
+  evidenceNote: "Historical golden-corpus baseline. No fresh execution captured; available on request."
+
 - id: maltrace-api-calls
-  label: API calls traced
+  label: API calls, WannaCry sample
   value: 94958
   display: "94,958"
   project: maltrace
-  evidence: null
+  evidence: "https://github.com/ckvishwa/Maltrace/blob/12a46508d789a273fe05b133bbd0eed94071489b/README.md#L248-L257"
+  evidenceKind: public
+  evidenceNote: "API-call count observed for the documented WannaCry sandbox sample, not an aggregate dataset metric."
+
 - id: maltrace-features
-  label: Behavioural features
+  label: Behavioral + PE features
   value: 54
   display: "54"
   project: maltrace
-  evidence: null
+  evidence: "https://github.com/ckvishwa/Maltrace/blob/12a46508d789a273fe05b133bbd0eed94071489b/README.md#L181-L218"
+  evidenceKind: public
+  evidenceNote: "54 engineered features total: 46 dynamic behavioral features plus 8 static PE features."
+
 - id: maltrace-confidence
-  label: Malicious confidence on sample
-  value: 95
-  display: "95%"
+  label: Malicious confidence, WannaCry sample
+  value: 94.2
+  display: "94.2%"
   project: maltrace
-  evidence: null
-  evidenceNote: "Single-sample score, not model accuracy — label it that way on the page"
+  evidence: "https://github.com/ckvishwa/Maltrace/blob/12a46508d789a273fe05b133bbd0eed94071489b/README.md#L248-L257"
+  evidenceKind: public
+  evidenceNote: "Single WannaCry sample prediction confidence from the program output. Not model accuracy, F1, recall, or dataset-level performance."
