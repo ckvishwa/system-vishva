@@ -34,6 +34,7 @@ const work = defineCollection({
       proposal: z.array(z.number().int().min(1)).default([]),
     })).optional(),
     signature: z.enum(['waveform', 'hash', 'stream', 'stamp']), // ARD §7 idea 4
+    sampleHash: z.string().regex(/^[a-fA-F0-9]{64}$/).optional(), // real SHA-256 of the analysed sample; powers the "hash" signature
     repo: z.url().optional(),
     draft: z.boolean().default(false),
   }),

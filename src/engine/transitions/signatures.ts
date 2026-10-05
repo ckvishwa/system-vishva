@@ -4,9 +4,10 @@
  * page. The glitch (E5) is a phase of every signature, not a separate effect: the outgoing title
  * is renamed "sig-title" so fx.css can play its 3-frame slice offset inside the window.
  *
- * MalTrace ("hash") plugs in by adding an entry to SIGNATURES; unknown signatures navigate normally.
+ * Unknown signatures, and a signature whose real input is missing (`ready` false), navigate normally.
  */
 import { waveformPath } from './waveform';
+import { isSha256, hashLabel } from './hash';
 import { EASE } from '../motion/tokens';
 
 export type SignatureId = 'waveform' | 'hash' | 'stream' | 'stamp';
@@ -22,6 +23,8 @@ export interface Signature {
   id: SignatureId;
   /** Selector, on the incoming page, of the element the line resolves into. */
   target: string;
+  /** False when the source lacks the real data the signature shows; the navigation is then a plain one. */
+  ready?(source: HTMLElement): boolean;
   /** Outgoing phase: mount the named overlay, resolve once it has formed. Returns a cleanup. */
   form(source: HTMLElement): Promise<() => void>;
 }
@@ -63,7 +66,30 @@ const waveform: Signature = {
   },
 };
 
-const SIGNATURES: Partial<Record<SignatureId, Signature>> = { waveform };
+/**
+ * MalTrace: the sample's SHA-256 (from the case study's `sampleHash`, never made up) forms over the record and
+ * settles into the same line under the case-study title. Opacity only, once, inside the same 460 ms budget.
+ */
+const hash: Signature = {
+  id: 'hash',
+  target: '[data-sig-hash-target]',
+  ready: (source) => isSha256(source.dataset.sigHash),
+  async form(source) {
+    const title = source.querySelector<HTMLElement>('[data-sig-title]') ?? source;
+    const r = title.getBoundingClientRect();
+    const el = document.createElement('span');
+    el.className = 'mono sig-hash';
+    el.setAttribute('aria-hidden', 'true');
+    el.textContent = hashLabel(source.dataset.sigHash!);
+    Object.assign(el.style, { position: 'fixed', left: `${r.left}px`, top: `${r.bottom}px`, pointerEvents: 'none', color: 'var(--c-info)', viewTransitionName: LINE_NAME });
+    document.body.append(el);
+    const a = el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: TIMING.form, easing: EASE.out, fill: 'both' });
+    await a.finished.catch(() => {});
+    return () => { a.cancel(); el.remove(); };
+  },
+};
+
+const SIGNATURES: Partial<Record<SignatureId, Signature>> = { waveform, hash };
 
 export function signatureFor(id: string | undefined): Signature | null {
   return (id && SIGNATURES[id as SignatureId]) || null;

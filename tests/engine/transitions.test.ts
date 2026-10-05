@@ -28,7 +28,6 @@ describe('waveform shape', () => {
 describe('signature registry', () => {
   it('resolves waveform', () => expect(signatureFor('waveform')?.id).toBe('waveform'));
   it('unknown or not-yet-built signatures navigate normally', () => {
-    expect(signatureFor('hash')).toBeNull();
     expect(signatureFor('nope')).toBeNull();
     expect(signatureFor(undefined)).toBeNull();
   });
@@ -36,6 +35,7 @@ describe('signature registry', () => {
 
 describe('transition budget', () => {
   it('stays under 700 ms end to end', () => expect(TOTAL_MS).toBeLessThanOrEqual(700));
+  it('the hash signature fits 500 ms', () => expect(TOTAL_MS).toBeLessThanOrEqual(500));
 
   it('fx.css uses the same morph duration as TIMING', () => {
     const css = readFileSync('src/styles/fx.css', 'utf8');

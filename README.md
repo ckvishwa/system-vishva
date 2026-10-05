@@ -98,6 +98,7 @@ The full architecture record is [docs/ARD.md](docs/ARD.md); scroll storyboards a
 - [ ] LinkedIn URL for `contact.astro` (the line is hidden until it exists)
 - [ ] About page: your two paragraphs on how you think about AI systems, security and reliability (nothing is shown until they exist)
 - [ ] Rexi beat 5 captures (`src/content/work/rexi/README.md`); the section is hidden until `captures.yaml` exists
+- [ ] MalTrace `sampleHash` (the analysed sample's real SHA-256, in `src/content/work/maltrace.mdx`): until it is set, the hash transition stays off and navigation is plain
 - [ ] Real `lastTouched` dates for the two lab entries (the TODO comments in `src/content/lab/*.md`)
 - [ ] Hand tests on a real Android phone and iPhone
 - [ ] On first Vercel deploy, open /logs and confirm real commits show

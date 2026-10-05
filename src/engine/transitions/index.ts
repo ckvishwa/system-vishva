@@ -26,7 +26,7 @@ export function initTransitions(): () => void {
     const ev = e as Event & { sourceElement?: Element; loader: () => Promise<void>; direction: string };
     const source = ev.sourceElement?.closest<HTMLElement>('[data-sig]');
     const sig = signatureFor(source?.dataset.sig);
-    if (!source || !sig || ev.direction !== 'forward') return;
+    if (!source || !sig || ev.direction !== 'forward' || sig.ready?.(source) === false) return;
 
     html.dataset.sig = sig.id;
     const title = titleOf(source);
