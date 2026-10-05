@@ -90,7 +90,7 @@ The full architecture record is [docs/ARD.md](docs/ARD.md); scroll storyboards a
 - [x] Phase 1: WebGL hero, waveform transition, Rexi scroll story, atmosphere layer
 - [x] Phase 1.5: layers, cells, `/status`, telemetry strip, command terminal
 - [x] Phase 1.6: scroll story without GSAP, strict CSP and security headers, Vercel config
-- [ ] Phase 2: proof layer (MalTrace transition, evidence drawer, QualityMesh gate demo, OG images)
+- [x] Phase 2: proof layer (MalTrace hash transition, evidence drawer, QualityMesh release-gate demo, OG images)
 - [ ] Evidence for every claim: public link, self-hosted file or declared on-request (the gate blocks on unverified)
 - [ ] Re-capture full Rexi suite and switch rexi-tests to self-hosted
 - [ ] Fill `measuredOn` for the MalTrace claims; fix the MalTrace README prose that says 95% (its output says 94.2%)

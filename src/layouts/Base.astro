@@ -17,6 +17,9 @@ interface Props { title: string; description?: string; motion?: boolean }
 const { title, description = 'AI systems engineering with security and reliability as first-class constraints.', motion = true } = Astro.props;
 // Canonical and og:url exist only when the build knows the public origin (SITE_URL or the Vercel production URL).
 const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
+// scripts/gen-og.ts draws one image per published case study plus a default, before every build.
+const work = Astro.url.pathname.match(/^\/work\/([^/]+)\/?$/);
+const ogImage = Astro.site ? new URL(`/og/${work ? `work-${work[1]}` : 'default'}.png`, Astro.site).href : undefined;
 const fullTitle = title === 'Home' ? 'Vishva Teja Chikoti — AI systems, security, reliability' : `${title} — Vishva Teja Chikoti`;
 ---
 <!doctype html>
@@ -36,6 +39,10 @@ const fullTitle = title === 'Home' ? 'Vishva Teja Chikoti — AI systems, securi
     {canonical && <meta property="og:url" content={canonical} />}
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    {ogImage && <meta property="og:image:width" content="1200" />}
+    {ogImage && <meta property="og:image:height" content="630" />}
+    {ogImage && <meta name="twitter:card" content="summary_large_image" />}
     <!-- ARD §4: tier decided BEFORE first paint. Keep in sync with src/engine/tier.ts (decideTier). -->
     <script is:inline>
       (() => {

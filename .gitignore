@@ -10,3 +10,4 @@ ui-ux-pro-max-skill/
 .env
 .env.*
 .lighthouseci/
+public/og/*.png
