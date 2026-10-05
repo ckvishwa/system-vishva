@@ -165,7 +165,8 @@ test('case study renders 0 animation frames after 6 s with no input, and after s
 
 test('the scroll story still lights nodes after a resize (viewport changes re-measure)', async ({ page }) => {
   await page.goto('/work/rexi/');
-  await page.evaluate(() => scrollTo(0, 1500));
+  await page.evaluate(() => scrollTo(0, document.body.scrollHeight)); // the page height differs per OS font metrics; the end always lights every node
   await page.setViewportSize({ width: 1000, height: 600 });
+  await page.evaluate(() => scrollTo(0, document.body.scrollHeight));
   await expect.poll(() => page.evaluate(() => [...document.querySelectorAll('[data-node]')].every((n) => n.classList.contains('is-active')))).toBe(true);
 });
