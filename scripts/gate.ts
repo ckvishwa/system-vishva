@@ -9,6 +9,8 @@
  *               after a build), so this one bakes the real figures into /status and the homepage strip.
  *               What ships is always this second build's output.
  *   6. headers  vercel.json security headers exist and the CSP hashes match the built HTML
+ *   7. claims   --online: every public evidence URL answers 200 anonymously, every self-hosted file is in dist/
+ *               (only after the final build; on in CI and production or with `-- --online`, off locally and in previews)
  *
  * Claims are strict everywhere except Vercel preview deployments (VERCEL_ENV=preview): a preview of work in
  * progress still deploys so it can be tested on a phone, and it shows BLOCK on /status honestly. Production
@@ -17,6 +19,7 @@
 import { spawnSync } from 'node:child_process';
 
 const preview = process.env.VERCEL_ENV === 'preview';
+const online = !preview && (process.argv.includes('--online') || !!process.env.CI || process.env.VERCEL_ENV === 'production');
 const steps: Array<[string, string]> = [
   ['claims', `npx tsx scripts/verify-claims.ts${preview ? '' : ' --strict'}`],
   ['tests', 'npm run test:report'],
@@ -24,8 +27,10 @@ const steps: Array<[string, string]> = [
   ['size', 'npm run size:report'],
   ['build (final, with measured sizes)', 'npm run build'],
   ['headers', 'npm run check:headers'],
+  ...(online ? [['claims (online)', 'npx tsx scripts/verify-claims.ts --strict --online'] as [string, string]] : []),
 ];
 
+if (!online) console.log('gate: online evidence check is off (local run or preview); CI and production run it\n');
 if (preview) console.log('gate: Vercel preview, so claims are advisory (production stays strict)\n');
 for (const [name, cmd] of steps) {
   console.log(`\n=== gate: ${name}`);
