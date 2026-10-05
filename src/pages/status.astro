@@ -6,6 +6,7 @@ import Cell from '../components/ui/Cell.astro';
 import GridCoords from '../components/ui/GridCoords.astro';
 import { getCollection } from 'astro:content';
 import { shownStatus } from '../content/lab-status';
+import { stateOf, kindOf } from '../content/evidence';
 import build from '../generated/build.json';
 
 const claims = await getCollection('claims');
@@ -41,7 +42,7 @@ const history = build.log.slice(0, 15);
               <th scope="row">{c.id}</th>
               <td>{c.data.display} <span class="muted">{c.data.label.toLowerCase()}</span></td>
               <td>{c.data.project}</td>
-              <td>{c.data.evidence ? <a href={c.data.evidence} rel="noopener" target="_blank">{c.data.evidence.replace(/^https?:\/\//, '')}</a> : <span class="risk">UNVERIFIED</span>}</td>
+              <td>{c.data.evidence ? <a href={c.data.evidence} rel="noopener" target="_blank">{c.data.evidence.replace(/^https?:\/\//, '')}</a> : stateOf(c.data) === 'on-request' ? <span class="info">ON REQUEST</span> : <span class="risk">UNVERIFIED</span>}{kindOf(c.data) === 'self-hosted' && <span class="muted"> · source: private repo, output published</span>}</td>
             </tr>
           ))}
         </tbody>

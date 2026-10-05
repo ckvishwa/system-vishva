@@ -48,6 +48,14 @@ describe('terminal commands', () => {
     expect(tones(r)).toContain('ok');
     expect(r.lines).toHaveLength(data.claims.length);
   });
+  it('cat claims shows on-request claims as ON REQUEST in info, not red', () => {
+    const d2: TerminalData = { ...data, claims: [{ id: 'r', display: '1,020', label: 'Automated tests', project: 'rexi', evidence: null, evidenceKind: 'on-request' }] };
+    const r = run('cat claims', { ...ctx, data: d2 });
+    expect(flat(r)).toContain('ON REQUEST');
+    expect(flat(r)).not.toContain('UNVERIFIED');
+    expect(tones(r)).toContain('info');
+    expect(tones(r)).not.toContain('risk');
+  });
   it('whoami prints only the profile facts', () => expect(flat(run('whoami', ctx))).toBe('Vishva Teja Chikoti\nA fact.\nAnother fact.'));
   it('status shows commit, gate, each check, and the live tier', () => {
     const out = flat(run('status', ctx));

@@ -32,8 +32,8 @@ interface Gate { id: string; label: string; status: Status; value: string; detai
 const gates: Gate[] = [];
 
 // claims
-const claims = readJson<{ total: number; verified: number; problems: string[] }>('src/generated/claims-report.json');
-if (claims) gates.push({ id: 'claims', label: 'Claims have evidence', status: claims.problems.length === 0 ? 'pass' : 'block', value: `${claims.verified}/${claims.total}`, detail: 'verified' });
+const claims = readJson<{ total: number; verified: number; onRequest?: number; problems: string[] }>('src/generated/claims-report.json');
+if (claims) gates.push({ id: 'claims', label: 'Claims have evidence', status: claims.problems.length === 0 ? 'pass' : 'block', value: `${claims.verified}/${claims.total}`, detail: claims.onRequest ? `verified, ${claims.onRequest} on request` : 'verified' });
 
 // unit tests
 const tests = readJson<{ numTotalTests: number; numPassedTests: number; numFailedTests: number; startTime: number; success: boolean }>('src/generated/tests.json');

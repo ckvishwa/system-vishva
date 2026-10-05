@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { parse } from 'yaml';
 
-const claims = parse(readFileSync('src/content/claims/claims.yaml', 'utf8')) as { id: string; display: string; evidence: string | null }[];
+const claims = parse(readFileSync('src/content/claims/claims.yaml', 'utf8')) as { id: string; display: string; evidence: string | null; evidenceKind?: string }[];
 
 test('/status renders every panel from real data', async ({ page }) => {
   await page.goto('/status/');
@@ -20,8 +20,10 @@ test('/status renders every panel from real data', async ({ page }) => {
   // claims ledger: one row per claim, UNVERIFIED where evidence is null
   const rows = page.locator('section[aria-labelledby="claims-h"] tbody tr');
   await expect(rows).toHaveCount(claims.length);
-  const unverified = claims.filter((c) => !c.evidence).length;
+  const unverified = claims.filter((c) => !c.evidence && c.evidenceKind !== 'on-request').length;
+  const onRequest = claims.filter((c) => !c.evidence && c.evidenceKind === 'on-request').length;
   await expect(page.locator('section[aria-labelledby="claims-h"]').getByText('UNVERIFIED', { exact: true })).toHaveCount(unverified);
+  await expect(page.locator('section[aria-labelledby="claims-h"]').getByText('ON REQUEST', { exact: true })).toHaveCount(onRequest);
 
   // history: at most 15 commits
   const commits = await page.locator('section[aria-labelledby="hist-h"] li').count();
@@ -139,12 +141,14 @@ test('every page other than the homepage hero idles at 0 frames', async ({ page 
 test('public case-study metrics say "evidence pending" in the muted colour, not red', async ({ page }) => {
   await page.goto('/work/rexi/');
   const chips = page.locator('.metric .chip');
-  await expect(chips.first()).toHaveText('evidence pending');
-  const colours = await chips.evaluateAll((els) => els.map((e) => getComputedStyle(e).color));
+  await expect(chips.first()).toHaveText('available on request');
+  const colours = await chips.evaluateAll((els) => els.filter((e) => e.textContent !== 'VERIFIED').map((e) => getComputedStyle(e).color));
   const muted = await page.evaluate(() => { const t = document.createElement('i'); t.style.color = 'var(--c-muted)'; document.body.append(t); const c = getComputedStyle(t).color; t.remove(); return c; });
   const risk = await page.evaluate(() => { const t = document.createElement('i'); t.style.color = 'var(--c-risk)'; document.body.append(t); const c = getComputedStyle(t).color; t.remove(); return c; });
   colours.forEach((c) => { expect(c).toBe(muted); expect(c).not.toBe(risk); });
   // red stays where it is diagnostic
   await page.goto('/status/');
-  await expect(page.locator('section[aria-labelledby="claims-h"] .risk').first()).toHaveText('UNVERIFIED');
+  // on-request is information (--c-info), never red; no claim here is unverified
+  await expect(page.locator('section[aria-labelledby="claims-h"] .info').first()).toHaveText('ON REQUEST');
+  await expect(page.locator('section[aria-labelledby="claims-h"] .risk')).toHaveCount(0);
 });

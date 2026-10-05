@@ -7,7 +7,7 @@
 export interface TerminalData {
   routes: string[];
   projects: { id: string; title: string; category: string }[];
-  claims: { id: string; display: string; label: string; project: string; evidence: string | null }[];
+  claims: { id: string; display: string; label: string; project: string; evidence: string | null; evidenceKind?: 'public' | 'self-hosted' | 'on-request' }[];
   profile: { name: string; facts: string[] };
   status: {
     commit: string; date: string; gate: string; pages: number;
@@ -89,7 +89,7 @@ export function run(input: string, ctx: Ctx): Result {
       return { lines: d.claims.map((c): Line => [
         { text: `${pad(c.id, w)}  ` },
         { text: `${pad(`${c.display} ${c.label.toLowerCase()}`, v)}  `, tone: 'muted' },
-        c.evidence ? { text: 'verified', tone: 'ok' } : { text: 'UNVERIFIED', tone: 'risk' },
+        c.evidence ? { text: 'verified', tone: 'ok' } : c.evidenceKind === 'on-request' ? { text: 'ON REQUEST', tone: 'info' } : { text: 'UNVERIFIED', tone: 'risk' },
         ...(c.evidence ? [{ text: `  ${c.evidence}`, tone: 'muted' as Tone }] : []),
       ]) };
     }

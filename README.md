@@ -80,6 +80,7 @@ inline handlers; its single inline script (the pre-paint render-tier decision) i
 | [0012](docs/adr/0012-atmosphere-layer.md) | Atmosphere layer |
 | [0013](docs/adr/0013-brutalist-telemetry.md) | Brutalist telemetry layer |
 | [0014](docs/adr/0014-scroll-story-without-gsap.md) | Scroll story without GSAP |
+| [0015](docs/adr/0015-evidence-kinds.md) | Evidence kinds: public, self-hosted, on request |
 
 The full architecture record is [docs/ARD.md](docs/ARD.md); scroll storyboards are in `docs/storyboards/`.
 
@@ -90,7 +91,9 @@ The full architecture record is [docs/ARD.md](docs/ARD.md); scroll storyboards a
 - [x] Phase 1.5: layers, cells, `/status`, telemetry strip, command terminal
 - [x] Phase 1.6: scroll story without GSAP, strict CSP and security headers, Vercel config
 - [ ] Phase 2: proof layer (MalTrace transition, evidence drawer, QualityMesh gate demo, OG images)
-- [ ] Evidence links in `claims.yaml` (the gate shows BLOCK until every claim has one, on purpose)
+- [ ] Evidence for every claim: public link, self-hosted file or declared on-request (the gate blocks on unverified)
+- [ ] Re-capture full Rexi suite and switch rexi-tests to self-hosted
+- [ ] Fill `measuredOn` for the MalTrace claims; fix the MalTrace README prose that says 95% (its output says 94.2%)
 - [ ] Rexi beat 5 needs real captured interpreter outputs: `src/content/work/rexi/README.md`
 - [ ] Real domain in `astro.config.mjs`, email and LinkedIn in `contact.astro`
 - [ ] Hand tests on a real Android phone and iPhone

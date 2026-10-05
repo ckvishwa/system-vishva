@@ -1,27 +1,32 @@
 ---
 // ARD §7 idea 2: a metric that can show its source, as a spec-sheet cell (ADR-0013 T1).
-// The chip is the claim's real state from claims.yaml: VERIFIED (has an evidence link) or "evidence pending",
-// shown in the muted colour here. Red UNVERIFIED stays on /status and in the terminal, where it is diagnostic.
+// The chip is the claim's real state from claims.yaml (ADR-0015): VERIFIED (an evidence link), "available on request"
+// (declared, no public artifact) or "evidence pending", the last two in the muted colour here. Red UNVERIFIED stays on /status and in the terminal, where it is diagnostic.
 // Phase 2 turns this into the evidence drawer.
-interface Props { claim: { id: string; data: { label: string; display: string; value?: number; evidence: string | null; evidenceNote?: string } } }
+import { stateOf, kindOf, type EvidenceKind } from '../../content/evidence';
+interface Props { claim: { id: string; data: { label: string; display: string; value?: number; evidence: string | null; evidenceKind?: EvidenceKind; evidenceNote?: string } } }
 const { claim } = Astro.props;
 const { label, display, evidence, value } = claim.data;
+const state = stateOf(claim.data);
+const selfHosted = kindOf(claim.data) === 'self-hosted';
 ---
-<figure class="cell metric" id={`claim-${claim.id}`} data-status={evidence ? 'pass' : undefined}>
+<figure class="cell metric" id={`claim-${claim.id}`} data-status={state === 'verified' ? 'pass' : undefined}>
   <figcaption class="cell-head mono">
     <span class="muted">{label}</span>
-    <span class="chip" data-tone={evidence ? 'pass' : 'pending'}>{evidence ? 'VERIFIED' : 'evidence pending'}</span>
+    <span class="chip" data-tone={state === 'verified' ? 'pass' : 'pending'}>{state === 'verified' ? 'VERIFIED' : state === 'on-request' ? 'available on request' : 'evidence pending'}</span>
   </figcaption>
   <p class="cell-value">
     {evidence
       ? <a class="value" data-fx="redact" href={evidence} rel="noopener" target="_blank" title="Open evidence" data-count data-value={value}>{display}</a>
       : <span class="value" data-fx="redact" title="Evidence pending" data-count data-value={value}>{display}</span>}
   </p>
+  {selfHosted && <p class="mono muted source">source: private repo, output published</p>}
 </figure>
 <style>
   /* The value keeps its own colour; the chip carries the status. */
   .metric { margin: 0; }
   .metric :global(.cell-value) { color: var(--c-text); }
   .value { display: inline-block; justify-self: start; }
+  .source { margin: 0; }
   a.value { text-decoration: underline dotted var(--c-muted); text-underline-offset: 6px; }
 </style>

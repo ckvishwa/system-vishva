@@ -27,7 +27,7 @@ export const GET: APIRoute = async () => {
   const body: TerminalData = {
     routes,
     projects: work.map((w) => ({ id: w.id, title: w.data.title, category: w.data.category })),
-    claims: claims.map((c) => ({ id: c.id, display: c.data.display, label: c.data.label, project: c.data.project, evidence: c.data.evidence })),
+    claims: claims.map((c) => ({ id: c.id, display: c.data.display, label: c.data.label, project: c.data.project, evidence: c.data.evidence, evidenceKind: c.data.evidenceKind })),
     profile,
     status: { commit: build.commit, date: build.date, gate: build.gate, pages: build.pages, gates: build.gates ?? [] },
     lab: lab.map((l) => ({ title: l.data.title, status: shownStatus(l.data.status, l.data.lastTouched), stage: l.data.stage, lastTouched: l.data.lastTouched.toISOString().slice(0, 10) })),

@@ -10,7 +10,8 @@ const claims = defineCollection({
     value: z.number(),
     display: z.string(),           // how it reads on the page, e.g. "323+"
     project: z.string(),
-    evidence: z.url().nullable(),  // null = unverified → fails --strict gate
+    evidence: z.union([z.url(), z.string().regex(/^\/(?!\/)/)]).nullable(),  // null needs evidenceKind on-request, else unverified → fails --strict gate
+    evidenceKind: z.enum(['public', 'self-hosted', 'on-request']).optional(), // ADR-0015; on-request = no public artifact
     evidenceNote: z.string().optional(),
     measuredOn: z.string().optional(), // ISO date the number was last measured
   }),
@@ -51,3 +52,4 @@ const lab = defineCollection({
 });
 
 export const collections = { claims, work, lab };
+
