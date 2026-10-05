@@ -2,6 +2,9 @@
 import '@fontsource-variable/inter-tight';
 import '@fontsource-variable/jetbrains-mono';
 import '../styles/global.css';
+// Preload the two latin faces the page really uses, so the swap lands before first paint (no reflow, CLS).
+import interLatin from '@fontsource-variable/inter-tight/files/inter-tight-latin-wght-normal.woff2?url';
+import monoLatin from '@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2?url';
 import { ClientRouter } from 'astro:transitions';
 import Nav from '../components/ui/Nav.astro';
 import StatusBar from '../components/ui/StatusBar.astro';
@@ -22,6 +25,8 @@ const fullTitle = title === 'Home' ? 'Vishva Teja Chikoti — AI systems, securi
     <meta name="description" content={description} />
     <!-- Allowed hex exception: meta tags cannot read CSS variables. Keep equal to --c-bg in src/styles/tokens.css. -->
     <meta name="theme-color" content="#050505" />
+    <link rel="preload" as="font" type="font/woff2" href={interLatin} crossorigin />
+    <link rel="preload" as="font" type="font/woff2" href={monoLatin} crossorigin />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />
     <meta property="og:title" content={fullTitle} />

@@ -9,7 +9,7 @@ const withClaims = await Promise.all(work.map(async (w) => ({
 ---
 <Base title="Plain" motion={false}>
   <article class="wrap prose plain">
-    <h1 class="h1" data-fx="decrypt">Vishva Teja Chikoti</h1>
+    <h1 class="h1">Vishva Teja Chikoti</h1>
     <p>AI systems engineering with security and reliability as first-class constraints. New Haven, CT.</p>
     {withClaims.map(({ w, claims }) => (
       <section>
