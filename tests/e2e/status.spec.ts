@@ -69,7 +69,7 @@ test('the homepage telemetry strip is one row of real cells and opens /status', 
   await expect(page).toHaveURL(/\/status\/$/);
 });
 
-const routes = ['/', '/work/', '/work/rexi/', '/work/maltrace/', '/lab/', '/systems/', '/status/', '/about/', '/contact/', '/plain/', '/logs/'];
+const routes = ['/', '/work/', '/work/rexi/', '/work/maltrace/', '/work/qualitymesh/', '/lab/', '/systems/', '/status/', '/about/', '/contact/', '/plain/', '/logs/'];
 
 test('T3: at most one inverted block on any page', async ({ page }) => {
   for (const r of routes) {

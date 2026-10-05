@@ -1,6 +1,7 @@
 ---
 import Base from './Base.astro';
 import ScrollStory from '../islands/ScrollStory.astro';
+import ReleaseGateDemo from '../islands/ReleaseGateDemo.astro';
 import { getEntries } from 'astro:content';
 import { hashLabel } from '../engine/transitions/hash';
 
@@ -21,6 +22,8 @@ const claims = d.claimIds.length ? await getEntries(d.claimIds.map((id: string) 
     <ScrollStory id={entry.id} pipeline={d.pipeline} story={d.story} claims={claims}>
       <slot />
     </ScrollStory>
+
+    {d.demo === 'release-gate' && <ReleaseGateDemo />}
 
     <p class="wrap mono"><a href="/work/">Back to all work</a></p>
   </article>

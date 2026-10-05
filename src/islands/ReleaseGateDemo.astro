@@ -1,0 +1,70 @@
+---
+// QualityMesh demo (ARD §7 idea 1): pick the evidence for four checks and watch the same rule the real gate uses decide.
+// Vanilla TS, no framework. The rule is src/engine/release-gate.ts. The initial verdict is rendered at build time,
+// so the page reads correctly without JS. Inputs are simulated, and the page says so.
+import { CHECKS, EVIDENCE, allPass, decide } from '../engine/release-gate';
+const start = decide(allPass());
+const names: Record<string, string> = { pass: 'passes', fail: 'fails', missing: 'no evidence' };
+---
+<section class="wrap sec demo" aria-labelledby="demo-h" data-release-gate>
+  <h2 id="demo-h" class="mono muted">Release gate</h2>
+  <p class="mono muted">Simulated inputs. The real gate for this site is on <a href="/status/">/status</a>.</p>
+  <div class="demo-grid">
+    <form class="demo-inputs mono">
+      {CHECKS.map((c) => (
+        <label>
+          <span>{c.label}</span>
+          <select name={c.id} data-check={c.id}>
+            {EVIDENCE.map((e) => <option value={e} selected={e === 'pass'}>{names[e]}</option>)}
+          </select>
+        </label>
+      ))}
+    </form>
+    <div class="cells">
+      <div class="cell" data-status={start.decision === 'SHIP' ? 'pass' : 'block'} data-verdict>
+        <p class="cell-head mono"><span class="muted">Decision</span></p>
+        <p class="cell-value" data-decision>{start.decision}</p>
+        <ul class="mono" role="status" aria-live="polite" data-reasons><li class="muted">every check has passing evidence</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+<style>
+  .demo { display: grid; gap: var(--s-3); }
+  .demo-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+  .demo-inputs { display: grid; border-top: 4px solid var(--c-text); }
+  .demo-inputs label { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); padding: var(--s-3) 0; border-bottom: 1px solid var(--c-rule); }
+  .demo-inputs select { background: var(--c-bg); color: var(--c-text); border: 1px solid var(--c-rule); border-radius: var(--r-0); padding: var(--s-1) var(--s-2); font: inherit; }
+  [data-reasons] { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s-1); font-size: var(--t-xs); }
+  @media (max-width: 720px) { .demo-grid { grid-template-columns: 1fr; } }
+</style>
+<script>
+  import { CHECKS, EVIDENCE, decide, type Inputs, type Evidence } from '../engine/release-gate';
+
+  const root = document.querySelector<HTMLElement>('[data-release-gate]');
+  if (root) {
+    const cell = root.querySelector<HTMLElement>('[data-verdict]')!;
+    const decision = root.querySelector<HTMLElement>('[data-decision]')!;
+    const list = root.querySelector<HTMLElement>('[data-reasons]')!;
+    const read = (): Inputs => {
+      const i = {} as Inputs;
+      for (const c of CHECKS) {
+        const v = root.querySelector<HTMLSelectElement>(`[data-check="${c.id}"]`)!.value as Evidence;
+        i[c.id] = EVIDENCE.includes(v) ? v : 'missing';
+      }
+      return i;
+    };
+    // Selects are native controls: keyboard and AT work with no extra code. One change listener on the form.
+    root.querySelector('form')!.addEventListener('change', () => {
+      const v = decide(read());
+      cell.dataset.status = v.decision === 'SHIP' ? 'pass' : 'block';
+      decision.textContent = v.decision;
+      list.replaceChildren(...(v.reasons.length ? v.reasons : [null]).map((r) => {
+        const li = document.createElement('li');
+        li.className = r ? 't-risk' : 'muted';
+        li.textContent = r ? `${r.label}: ${r.why}` : 'every check has passing evidence';
+        return li;
+      }));
+    });
+  }
+</script>
