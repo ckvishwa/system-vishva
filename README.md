@@ -97,3 +97,4 @@ The full architecture record is [docs/ARD.md](docs/ARD.md); scroll storyboards a
 - [ ] Rexi beat 5 needs real captured interpreter outputs: `src/content/work/rexi/README.md`
 - [ ] Real domain in `astro.config.mjs`, email and LinkedIn in `contact.astro`
 - [ ] Hand tests on a real Android phone and iPhone
+- [ ] On first Vercel deploy, open /logs and confirm real commits show
