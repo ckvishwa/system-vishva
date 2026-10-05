@@ -41,15 +41,7 @@ const caption = (g: { nodes: [number, number]; proposal: number[] }, last: boole
 
   <section class="wrap prose body sec"><slot /></section>
 
-  {hasStory && (
-    <section class="wrap" data-beat="change" data-placeholder aria-label="Model proposal against server authorization">
-      <div class="boundary">
-        <p class="mono">PLACEHOLDER</p>
-        <p>Real captured interpreter outputs go here, each stamped VALIDATED or REJECTED by the server.</p>
-        <p class="mono muted">TODO: awaiting captured logs. Format and location: src/content/work/{id}/README.md</p>
-      </div>
-    </section>
-  )}
+  {/* Beat 5 (real captured interpreter outputs) renders only once captures exist: src/content/work/rexi/README.md. No placeholder is shown meanwhile. */}
 
   {hasStory && claims.length > 0 && (
     <section class="wrap metrics sec" data-beat="state" aria-label="Measured results">

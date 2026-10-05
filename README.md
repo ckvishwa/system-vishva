@@ -94,7 +94,10 @@ The full architecture record is [docs/ARD.md](docs/ARD.md); scroll storyboards a
 - [ ] Evidence for every claim: public link, self-hosted file or declared on-request (the gate blocks on unverified)
 - [ ] Re-capture full Rexi suite and switch rexi-tests to self-hosted
 - [ ] Fill `measuredOn` for the MalTrace claims; fix the MalTrace README prose that says 95% (its output says 94.2%)
-- [ ] Rexi beat 5 needs real captured interpreter outputs: `src/content/work/rexi/README.md`
-- [ ] Real domain in `astro.config.mjs`, email and LinkedIn in `contact.astro`
+- [ ] Real domain: set `SITE_URL` (or connect Vercel, which provides `VERCEL_PROJECT_PRODUCTION_URL`); until then canonical and OG URLs are left out
+- [ ] LinkedIn URL for `contact.astro` (the line is hidden until it exists)
+- [ ] About page: your two paragraphs on how you think about AI systems, security and reliability (nothing is shown until they exist)
+- [ ] Rexi beat 5 captures (`src/content/work/rexi/README.md`); the section is hidden until `captures.yaml` exists
+- [ ] Real `lastTouched` dates for the two lab entries (the TODO comments in `src/content/lab/*.md`)
 - [ ] Hand tests on a real Android phone and iPhone
 - [ ] On first Vercel deploy, open /logs and confirm real commits show

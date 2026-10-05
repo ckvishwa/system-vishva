@@ -9,3 +9,4 @@ ui-ux-pro-max-skill/
 .vercel/
 .env
 .env.*
+.lighthouseci/

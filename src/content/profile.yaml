@@ -1,7 +1,10 @@
 # The facts shown on /about and printed by the terminal's `whoami`. One source, so they cannot disagree.
-# Add facts here only when they are true; the page joins them into one paragraph in this order.
+# Add facts here only when they are true. Each is a labelled row; /about renders them as a definition list.
 name: Vishva Teja Chikoti
 facts:
-  - M.S. Cybersecurity & Networks, University of New Haven (2025).
-  - CompTIA Security+.
-  - Previously Programmer Analyst at Cognizant, working across quality engineering, security operations and vulnerability analysis.
+  - { label: Education, value: "M.S. Cybersecurity & Networks, University of New Haven (2025)" }
+  - { label: Education, value: "B.Tech, Computer Science" }
+  - { label: Certification, value: "CompTIA Security+" }
+  - { label: Experience, value: "Programmer Analyst, Cognizant: QA / quality engineering, security operations and vulnerability analysis" }
+  - { label: Location, value: "New Haven, CT" }
+  - { label: Seeking, value: "SOC Analyst, Detection Engineer" }

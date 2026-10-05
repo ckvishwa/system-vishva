@@ -22,7 +22,8 @@ export const GET: APIRoute = async () => {
   const work = (await getCollection('work', (w) => !w.data.draft)).sort((a, b) => a.data.order - b.data.order);
   const claims = await getCollection('claims');
   const lab = (await getCollection('lab')).sort((a, b) => b.data.lastTouched.getTime() - a.data.lastTouched.getTime());
-  const profile = parse(profileRaw) as { name: string; facts: string[] };
+  const rawProfile = parse(profileRaw) as { name: string; facts: { label: string; value: string }[] };
+  const profile = { name: rawProfile.name, facts: rawProfile.facts.map((f) => `${f.label}: ${f.value}`) };
 
   const body: TerminalData = {
     routes,

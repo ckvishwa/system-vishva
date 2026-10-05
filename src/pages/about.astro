@@ -2,12 +2,25 @@
 import Base from '../layouts/Base.astro';
 import { parse } from 'yaml';
 import profileRaw from '../content/profile.yaml?raw';
-const profile = parse(profileRaw) as { name: string; facts: string[] };
+const profile = parse(profileRaw) as { name: string; facts: { label: string; value: string }[] };
 ---
 <Base title="About">
   <section class="wrap prose pad-9">
     <h1 class="display" data-fx="decrypt">About</h1>
-    <p class="mt-6">{profile.facts.join(' ')}</p>
-    <p class="muted mt-4">TODO: two paragraphs in your own voice on how you think about AI systems, security and reliability.</p>
+    <dl class="facts mono mt-6">
+      {profile.facts.map((f) => (
+        <div class="row">
+          <dt class="muted">{f.label}</dt>
+          <dd>{f.value}</dd>
+        </div>
+      ))}
+    </dl>
   </section>
 </Base>
+<style>
+  /* One ruled block: a 4px rule opens it, 1px rules between rows (ADR-0013). */
+  .facts { margin: 0; border-top: 4px solid var(--c-text); max-width: 72ch; }
+  .row { display: grid; grid-template-columns: 9rem 1fr; gap: var(--s-4); padding-block: var(--s-3); border-bottom: 1px solid var(--c-rule); }
+  dt, dd { margin: 0; }
+  @media (max-width: 36rem) { .row { grid-template-columns: 1fr; gap: var(--s-1); } }
+</style>
