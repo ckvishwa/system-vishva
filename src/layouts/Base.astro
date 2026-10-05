@@ -11,6 +11,7 @@ import StatusBar from '../components/ui/StatusBar.astro';
 import Transitions from '../islands/Transitions.astro';
 import Atmosphere from '../islands/Atmosphere.astro';
 import Terminal from '../islands/Terminal.astro';
+import EvidenceDrawer from '../islands/EvidenceDrawer.astro';
 
 interface Props { title: string; description?: string; motion?: boolean }
 const { title, description = 'AI systems engineering with security and reliability as first-class constraints.', motion = true } = Astro.props;
@@ -76,5 +77,6 @@ const fullTitle = title === 'Home' ? 'Vishva Teja Chikoti — AI systems, securi
     <Transitions />
     <Atmosphere />
     <Terminal />
+    <EvidenceDrawer />
   </body>
 </html>

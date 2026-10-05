@@ -1,5 +1,6 @@
 [
-  { "name": "pre-LCP JS (all pages, excl. lazy three/scene/terminal chunks)", "path": "dist/_astro/!(three.module.????????|SystemScene.????????|terminal.????????).js", "gzip": true, "limit": "20 KB" },
+  { "name": "pre-LCP JS (all pages, excl. lazy three/scene/terminal chunks)", "path": "dist/_astro/!(three.module.????????|SystemScene.????????|terminal.????????|evidence-drawer.????????).js", "gzip": true, "limit": "20 KB" },
   { "name": "home total incl. three", "path": "dist/_astro/*.js", "gzip": true, "limit": "250 KB" },
+  { "name": "evidence drawer (lazy, first click)", "path": "dist/_astro/evidence-drawer.????????.js", "gzip": true, "limit": "3 KB" },
   { "name": "terminal (lazy, first open)", "path": "dist/_astro/terminal.????????.js", "gzip": true, "limit": "6 KB" }
 ]

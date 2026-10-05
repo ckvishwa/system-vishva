@@ -1,0 +1,13 @@
+---
+// Evidence drawer loader (ARD §7 idea 2). Only this delegated click handler ships up front; the drawer itself is
+// imported on the first click on a metric, so pre-LCP JS barely changes. Without JS a verified metric is still a plain link.
+---
+<script>
+  let mod: Promise<typeof import('../engine/evidence-drawer')> | null = null;
+  document.addEventListener('click', (e) => {
+    const t = (e.target as Element).closest<HTMLElement>('[data-evidence-open]');
+    if (!t || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    (mod ??= import('../engine/evidence-drawer')).then((m) => m.openDrawer(t));
+  });
+</script>

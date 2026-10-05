@@ -4,21 +4,22 @@
 // (declared, no public artifact) or "evidence pending", the last two in the muted colour here. Red UNVERIFIED stays on /status and in the terminal, where it is diagnostic.
 // Phase 2 turns this into the evidence drawer.
 import { stateOf, kindOf, type EvidenceKind } from '../../content/evidence';
-interface Props { claim: { id: string; data: { label: string; display: string; value?: number; evidence: string | null; evidenceKind?: EvidenceKind; evidenceNote?: string } } }
+interface Props { claim: { id: string; data: { label: string; display: string; value?: number; evidence: string | null; evidenceKind?: EvidenceKind; evidenceNote?: string; measuredOn?: string } } }
 const { claim } = Astro.props;
-const { label, display, evidence, value } = claim.data;
+const { label, display, evidence, value, evidenceNote, measuredOn } = claim.data;
 const state = stateOf(claim.data);
-const selfHosted = kindOf(claim.data) === 'self-hosted';
+const kind = state === 'unverified' ? 'pending' : kindOf(claim.data);
+const selfHosted = kind === 'self-hosted';
 ---
-<figure class="cell metric" id={`claim-${claim.id}`} data-status={state === 'verified' ? 'pass' : undefined}>
+<figure class="cell metric" id={`claim-${claim.id}`} data-status={state === 'verified' ? 'pass' : undefined} data-claim data-label={label} data-display={display} data-kind={kind} data-evidence={evidence ?? undefined} data-note={evidenceNote} data-measured={measuredOn}>
   <figcaption class="cell-head mono">
     <span class="muted">{label}</span>
     <span class="chip" data-tone={state === 'verified' ? 'pass' : 'pending'}>{state === 'verified' ? 'VERIFIED' : state === 'on-request' ? 'available on request' : 'evidence pending'}</span>
   </figcaption>
   <p class="cell-value">
     {evidence
-      ? <a class="value" data-fx="redact" href={evidence} rel="noopener" target="_blank" title="Open evidence" data-count data-value={value}>{display}</a>
-      : <span class="value" data-fx="redact" title="Evidence pending" data-count data-value={value}>{display}</span>}
+      ? <a class="value" data-fx="redact" href={evidence} rel="noopener" target="_blank" title="Show evidence" data-evidence-open data-count data-value={value}>{display}</a>
+      : <button type="button" class="value" data-fx="redact" title="Show evidence" data-evidence-open data-count data-value={value}>{display}</button>}
   </p>
   {selfHosted && <p class="mono muted source">source: private repo, output published</p>}
 </figure>
@@ -27,6 +28,7 @@ const selfHosted = kindOf(claim.data) === 'self-hosted';
   .metric { margin: 0; }
   .metric :global(.cell-value) { color: var(--c-text); }
   .value { display: inline-block; justify-self: start; }
+  button.value { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline dotted var(--c-muted); text-underline-offset: 6px; }
   .source { margin: 0; }
   a.value { text-decoration: underline dotted var(--c-muted); text-underline-offset: 6px; }
 </style>
