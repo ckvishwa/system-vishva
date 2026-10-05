@@ -29,6 +29,8 @@ test('/plain has no effects: no data-fx element, tier C, no armed mode', async (
 test('no page shows TODO or placeholder text', async ({ page }) => {
   for (const path of ['/', '/work/', '/work/rexi/', '/work/maltrace/', '/lab/', '/systems/', '/status/', '/about/', '/contact/', '/plain/', '/logs/']) {
     await page.goto(path);
+    // Commit subjects on /status and /logs are real git history, not page copy: leave the feeds out.
+    await page.evaluate(() => document.querySelectorAll('ol.feed').forEach((el) => el.remove()));
     const text = await page.locator('body').innerText();
     expect(text, path).not.toMatch(/\bTODO\b|PLACEHOLDER/);
   }
