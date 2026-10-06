@@ -85,6 +85,28 @@ were dropped, which took the first working build from 7.4 KB to 6.5 KB.
 
 **Future growth beyond 6.8 KB requires another explicit decision.** No other budget changed.
 
+## Amendment 2026-10-07 (2): cinematic dwell
+The nine states were consuming scroll evenly, so the hero frames passed too quickly. The fix is pacing, not redesign: **dwell**,
+scroll distance where the visual state stays fixed.
+
+- **A pure piecewise mapping.** `storyProgress(raw, mobile)` in `story-map.ts` turns raw scroll progress into the progress the
+  timeline is drawn at. A move advances it; a hold keeps it constant; the next move advances it again. The table of segments is the
+  only place pacing is set, and the stage's height (970vh desktop, 835vh phone) is derived from it.
+- **A hold is distance, not time.** There is no timer, no `setInterval`, no extra `requestAnimationFrame`, no ScrollTrigger pinning.
+  The spring still acts on the raw progress, so holds are entered and left smoothly, and a visitor who stops inside one gets 0 frames.
+- **Which beats hold:** X-RAY, EXPLODE, DETONATE, VERDICT and MAP are the hero holds (0.55, 1.0, 0.9, 1.0 and 0.6 viewports on
+  desktop; 0.45, 0.68, 0.68, 0.7 and 0.4 on a phone). SEALED, DISTILL and EXPLAIN get short reading plateaus. DECIDE has none.
+  The phone profile is 84.5% of the desktop scroll (7.35 vs 8.7 viewports) with the same moves.
+- **Scroll-derived secondary motion.** The X-RAY scan sweeps once with the scroll. EXPLODE's sub-beats (separate, rail, leaders,
+  labels) are consecutive ranges of the move before its hold, so the held frame is the finished one. The DETONATE stream moves with
+  the raw scroll position, so it runs through a held frame while the visitor scrolls and stops when they stop.
+- **One discontinuity, on purpose.** After the VERDICT hold the progress jumps from 6.2 to 7 states. Nothing moves anywhere in that
+  range (VERDICT is absolute stillness), so the picture does not change; unit tests assert it, and that every layer is identical
+  across the jump.
+- **The verdict stamps at the start of the beat**, then nothing changes for the whole dwell (asserted layer by layer and in the browser).
+- **Cost:** about 0.35 KB of the teardown chunk (6,797 B of the 6,800 B limit). The mapping is a table and one short function; the
+  test-only helpers (`storyInfo`, `holdRange`, `rawForP`, the hold names) are not in the shipped chunk. No budget changed.
+
 ## Rejected
 - **WebGL.** The teardown is a diagram a visitor must read, so it is DOM (ADR-0005), plus the one 2D canvas above.
 - **An animation library or a loop of its own** (ADR-0014).

@@ -14,6 +14,7 @@ import { trackScroll } from '../input/scroll';
 import { trackGyro } from '../input/gyro';
 import { springStep, settled, type Spring } from './spring';
 import { teardownState, stageProgress, slabHeights, barLengths, STATES, type Layers } from './teardown-state';
+import { storyProgress, storyLength } from './story-map';
 import { allocate, assign, flightPos, pointPos, type Flight, type Pt } from './stream';
 import { SPREAD, slabTransform, slabPoint, bands, labelSpot } from './explode';
 
@@ -40,7 +41,7 @@ const el = (tag: string, cls: string, text?: string, parent?: Element) => {
 export function initTeardown(root: HTMLElement): () => void {
   // ---- the payload: everything the stage shows, built by Teardown.astro from the same data as the static document
   const D = JSON.parse(root.dataset.td!) as {
-    f: { z: number; h: string }; t: string; a: string; s?: { l: string; e: number; z: number; o?: number }[]; ap?: number[]; tot?: number; np?: number;
+    f: { z: number; h: string }; t: string; a: string; s?: { l: string; e: number; z: number; o?: number }[]; ln: number; ap?: number[]; tot?: number; np?: number;
     d?: number; st?: number; sn: string[]; dl: string; sl: string; m?: string; v: string; vs: string; sh: { l: string; v: number }[]; sc: string; tg?: [string, string][]; ch?: [string, string][];
   };
   const { f: file, s: secs = [], ap: apis = [], tot: total = null, np: procs = 0, v: verdict, sh: shap, tg: tags = [], ch: stages = [] } = D;
@@ -63,7 +64,7 @@ export function initTeardown(root: HTMLElement): () => void {
   const shapLen = barLengths(shap.map((s) => s.v));
   let XL = 0, XW = 0, XT = 0, XH = 0, XB = 0, XLW = 0, XLH = 0, XZ = 0, XM = false; // the slab stack, shared with the canvas
   let XG: number[] = [], XA: { x: number; y: number }[] = [], XS: { x: number; y: number; right: boolean; lx: number; ly: number }[] = [];
-  let shown = -1, trackTop = 0, trackH = 0, vh = 0, stageW = 0, stageH = 0;
+  let shown = -1, trackTop = 0, trackH = 0, vh = 0, stageW = 0, stageH = 0, mob = false;
 
   if (secs.length) {
     const g = el('div', 'td-slabs', undefined, world); // the one preserve-3d group
@@ -72,7 +73,7 @@ export function initTeardown(root: HTMLElement): () => void {
       const e = el('div', 'td-slab', undefined, g);
       el('i', 'td-fill', undefined, e).style.opacity = String(Math.min(1, s.e / 8) * 0.3); // fill density follows entropy
       // the annotation (s.l) was composed from real data only: a line exists only when the data has it
-      return { e, lab: el('p', 'td-lab mono', s.l, world), lines: s.l.split('\n').length, h: 0, top: 0, b: { y: 0, h: 0 } };
+      return { e, lab: el('p', 'td-lab mono', s.l, world), h: 0, top: 0, b: { y: 0, h: 0 } };
     });
     layers.push({
       place(geo) {
@@ -82,7 +83,7 @@ export function initTeardown(root: HTMLElement): () => void {
         let y = r.y;
         items.forEach((it, i) => { it.h = hs[i]; it.top = y + gp * i; it.b = bd[i]; y += hs[i]; box(it.e, r.w, hs[i]); });
         XG = items.slice(1).map((it, i) => (items[i].top + items[i].h + it.top) / 2);
-        XLW = m ? Math.min(250, geo.W * 0.62) : 210; XLH = Math.max(...items.map((it) => it.lines)) * 14 + 4;
+        XLW = m ? Math.min(250, geo.W * 0.62) : 210; XLH = D.ln * 14 + 4;
         items.forEach((it, i) => { box(it.lab, XLW); it.lab.style.textAlign = i % 2 ? 'right' : 'left'; });
         box(shell, r.w, XH); tr(shell, r.x, XT);
       },
@@ -183,21 +184,26 @@ export function initTeardown(root: HTMLElement): () => void {
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, cv.width, cv.height);
         ctx.setTransform(s * dpr, 0, 0, s * dpr, dpr * (stageW / 2 - (s * stageW) / 2), dpr * (cy - s * cy + l.cam.y * stageH)); // the camera
-        if (l.rail > 0) { // the alignment rail through the exploded object, and a leader from each annotation to its slab
-          ctx.strokeStyle = rule;
-          ctx.globalAlpha = l.rail * 0.5;
-          const rx = Math.round(XL + XW / 2) + 0.5;
-          ctx.beginPath(); ctx.moveTo(rx, XT - 16); ctx.lineTo(rx, lerp(XT + XH + 16, XB + 16, l.slabs.gap)); ctx.stroke();
-          ctx.globalAlpha = l.slabs.labels * l.slabs.opacity;
+        ctx.strokeStyle = rule;
+        if (l.scan % 1) { // X-RAY: one scan sweeps the file while 0 < scan < 1, tied to the scroll, never looping
+          const y = XT + l.scan * XH;
+          ctx.globalAlpha = 0.6;
+          ctx.beginPath(); ctx.moveTo(XL, y); ctx.lineTo(XL + XW, y); ctx.stroke();
+        }
+        if (l.rail) { // EXPLODE, in order: the alignment rail draws down the exploded object, then a leader extends from each annotation to its slab
+          ctx.globalAlpha = l.slabs.opacity * 0.5;
+          const rx = Math.round(XL + XW / 2) + 0.5, ry = XT - 16;
+          ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx, lerp(ry, XB + 16, l.rail)); ctx.stroke();
+          ctx.globalAlpha = l.slabs.opacity;
           ctx.beginPath();
-          XA.forEach((a, i) => { const p = XS[i]; if (p) { ctx.moveTo(p.lx, p.ly); ctx.lineTo(a.x, a.y); } });
+          XA.forEach((a, i) => { const p = XS[i]; ctx.moveTo(p.lx, p.ly); ctx.lineTo(lerp(p.lx, a.x, l.leader), lerp(p.ly, a.y, l.leader)); });
           ctx.stroke();
         }
-        if (l.points.opacity > 0 && lane.length) {
+        if (l.points.opacity && lane.length) {
           ctx.globalAlpha = l.points.opacity;
           ctx.fillStyle = info;
           const fl: Flight = { x0: XL, x1: XL + XW, gaps: XG.length ? XG : [cy], o: { x: stageW / 2, y: stageH / 2 }, zr: XZ, lanes: apis.length };
-          const flow = drawn * 6; // the stream runs with the page: six laps over the whole scroll
+          const flow = drawn * 15; // the stream's motion is the scroll position: it runs through a held frame while the visitor scrolls, and stops when they stop
           for (let j = 0; j < lane.length; j++) {
             const f = flightPos(j, lane[j], fl, flow), [x, y] = pointPos([f.x, f.y], cellPos[cell[j]], mid, l.grid.assemble, l.grid.converge), q = size * lerp(f.s, 1, l.grid.assemble);
             ctx.fillRect(x - q / 2, y - q / 2, q, q);
@@ -295,9 +301,10 @@ export function initTeardown(root: HTMLElement): () => void {
 
   // ---- geometry: measured on load and on resize, then cached. A frame never reads layout.
   const measure = () => {
-    const cs = getComputedStyle(stage), sa = Math.max(parseFloat(cs.paddingLeft) || 0, parseFloat(cs.paddingRight) || 0), sb = parseFloat(cs.paddingBottom) || 0; // safe-area insets
+    const cs = getComputedStyle(stage), sa = Math.max(parseFloat(cs.paddingLeft), parseFloat(cs.paddingRight)) || 0, sb = parseFloat(cs.paddingBottom) || 0; // safe-area insets
     const W = stage.clientWidth, H = stage.clientHeight - sb, mobile = W < 720, pad = (mobile ? 16 : 24) + sa, full = { x: pad, w: W - pad * 2 };
-    stageW = W; stageH = H;
+    stageW = W; stageH = H; mob = mobile;
+    track.style.height = `${(storyLength(mobile) + 1) * 100}vh`; // the story's length, in viewports: the pacing is set in story-map.ts
     const sw = mobile ? W * 0.76 : Math.min(300, W * 0.26);
     const geo: Geo = {
       W, H, mobile, pad,
@@ -323,8 +330,8 @@ export function initTeardown(root: HTMLElement): () => void {
   const draw = (p: number) => {
     if (p === drawn) return;
     drawn = p;
-    stage.dataset.p = String(Math.round(p * 10000) / 10000); // progress as drawn: tests wait for the glide to land on it
-    const l = teardownState(p);
+    stage.dataset.r = p.toFixed(4); // scroll progress as drawn: tests wait for the glide to land on it
+    const l = teardownState(storyProgress(p, mob));
     if (l.index !== shown) { shown = l.index; headEl.textContent = `${D.a} · ${String(shown).padStart(2, '0')} ${STATES[shown].name} · ${STATES[shown].meaning}`; }
     world.style.transform = `translate3d(0,${l.cam.y * stageH}px,0) scale(${l.cam.scale})`; // the camera
     // the hash settles character by character, left to right; the rest still scrambles until its turn

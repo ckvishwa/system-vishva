@@ -108,7 +108,7 @@ html[data-tier='C'] :is(.hard, .hard-lift):is(:hover, :focus-visible) { transfor
 .tags a { display: block; border: 1px solid var(--c-text); padding: 2px var(--s-2); }
 .tags a:hover { border-color: var(--c-system); }
 .info { color: var(--c-info); }
-.td-track { height: 700vh; position: relative; }
+.td-track { height: 970vh; position: relative; } /* before the script sets it from the story length (story-map.ts) */
 .td-stage { position: sticky; top: 56px; height: calc(100svh - 56px); overflow: hidden; contain: layout paint; background: var(--c-bg); padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
 .td-stage.is-hot { will-change: transform; }
 .td-stage > *, .td-layer > *, .td-world > * { position: absolute; left: 0; top: 0; transform-origin: 0 0; }

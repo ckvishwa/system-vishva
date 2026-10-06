@@ -1,19 +1,31 @@
 import { test, expect, type Page } from '@playwright/test';
 import { instrument } from './helpers';
+import { holdRange, rawForP, storyLength } from '../../src/engine/motion/story-map';
 
 const NAMES = ['SEALED', 'X-RAY', 'EXPLODE', 'DETONATE', 'DISTILL', 'DECIDE', 'VERDICT', 'EXPLAIN', 'MAP'];
 const W = 1 / 9;
 const SHA = 'ed01ebfbc9eb5bbea545af4d01bf5f1071661840480439c6e5babe8e080e41aa';
 
-/** Scroll so the stage is at `p` (0..1) of its travel, and wait for the spring to land there. */
-async function goto(page: Page, p: number) {
-  await page.evaluate((p) => {
+const isMobile = (page: Page) => (page.viewportSize()?.width ?? 1280) < 720;
+
+/** Scroll so the stage is at RAW progress `r` (0..1 of its travel), and wait for the spring to land there. */
+async function goRaw(page: Page, r: number) {
+  await page.evaluate((r) => {
     const t = document.querySelector('.td-track')!;
     const top = t.getBoundingClientRect().top + scrollY;
-    scrollTo(0, top + p * (t.clientHeight - innerHeight));
-  }, p);
-  await page.waitForFunction((p) => Math.abs(+(document.querySelector('.td-stage') as HTMLElement).dataset.p! - p) < 0.003, p, { timeout: 5000 });
+    scrollTo(0, top + r * (t.clientHeight - innerHeight));
+  }, r);
+  await page.waitForFunction((r) => Math.abs(+(document.querySelector('.td-stage') as HTMLElement).dataset.r! - r) < 0.0007, r, { timeout: 6000 });
   await page.waitForTimeout(60);
+}
+
+/** Scroll to where the story's timeline reaches mapped progress `p` (the pacing is in story-map.ts; this works for either profile). */
+const goto = (page: Page, p: number) => goRaw(page, rawForP(p, isMobile(page)));
+
+/** Scroll to a point inside a named hold: 0 = its start, 0.5 = its centre, 1 = its end. */
+async function hold(page: Page, name: string, at = 0.5) {
+  const [a, b] = holdRange(name, isMobile(page));
+  await goRaw(page, a + (b - a) * at);
 }
 
 /** Every inline transform and opacity on the stage, plus a fingerprint of the canvas: the whole visible state of the stage. */
@@ -30,7 +42,7 @@ test('every one of the 9 states is reachable by scrolling', async ({ page }) => 
   await ready(page);
   const head = page.locator('.td-head');
   for (let k = 0; k < 9; k++) {
-    await goto(page, (k + 0.5) * W);
+    if (k === 6) await hold(page, 'verdict'); else await goto(page, (k + 0.5) * W); // VERDICT lies in the stillness: it is reached by its hold
     await expect(head).toContainText(`0${k} ${NAMES[k]}`);
   }
   await expect(head).toContainText('Analysis 15');
@@ -41,7 +53,7 @@ test('REVERSE SCROLL REASSEMBLES THE FILE: out to the end and back is identical 
   await goto(page, 0);
   await page.waitForTimeout(300);
   const sealed = await snapshot(page);
-  for (const p of [0.2, 0.4, 0.6, 0.8, 1, 0.8, 0.6, 0.4, 0.2, 0]) await goto(page, p);
+  for (const r of [0.2, 0.4, 0.6, 0.8, 1, 0.8, 0.6, 0.4, 0.2, 0]) await goRaw(page, r);
   await page.waitForTimeout(300);
   expect(await snapshot(page)).toBe(sealed);
   const slabs = page.locator('.td-slab');
@@ -108,7 +120,7 @@ test('the layers show the real numbers: API total, processes, matrix, model, ver
   await expect(page.locator('.td-title')).toHaveText('wannacry.exe · 3,514,368 bytes');
   await expect(page.locator('.td-sha')).toHaveText(SHA); // settled
 
-  await goto(page, 4.08 * W);
+  await goto(page, 3.9 * W);
   await expect(page.locator('.td-total')).toHaveText('94,958 API calls'); // resolves to the real total
   expect(await page.locator('.td-proc').count()).toBe(17);               // process_count nodes, no invented edges
   await expect(page.locator('.td-lab', { hasText: '17 processes' })).toHaveCount(1);
@@ -121,7 +133,7 @@ test('the layers show the real numbers: API total, processes, matrix, model, ver
   await goto(page, 5.5 * W);
   await expect(page.locator('.td-model')).toHaveText('Random forest');
 
-  await goto(page, 6.5 * W);
+  await hold(page, 'verdict');
   await expect(page.locator('.td-verdict')).toHaveText('95% malicious confidence on this sample');
   await expect(page.locator('.td-verdict')).not.toContainText('94.2');
 
@@ -168,10 +180,10 @@ test('VERDICT is absolute stillness: nothing but the verdict changes', async ({ 
   const a = await snapshot(page, skip);
   const stamped = (p: Page) => p.locator('.td-verdict').evaluate((e) => (e.parentElement as HTMLElement).style.opacity);
   expect(await stamped(page)).toBe('0');
-  await goto(page, 6.5 * W);
+  await hold(page, 'verdict', 0.5);
   const b = await snapshot(page, skip);
   expect(await stamped(page)).toBe('1');   // the verdict itself did change
-  await goto(page, 6.95 * W);
+  await hold(page, 'verdict', 1);
   const c = await snapshot(page, skip);
   expect(b).toBe(a);
   expect(c).toBe(a);
@@ -207,7 +219,7 @@ test('the animated stage is aria-hidden over the same content, which stays in th
 test('0 idle frames on /work/maltrace/ after scrolling stops', async ({ page }) => {
   await ready(page);
   await page.waitForTimeout(2200);
-  for (let p = 0; p <= 1.001; p += 0.1) await goto(page, Math.min(1, p));
+  for (let r = 0; r <= 1.001; r += 0.1) await goRaw(page, Math.min(1, r));
   await page.waitForTimeout(1500);
   await page.evaluate(() => { (window as any).__frames = 0; });
   await page.waitForTimeout(1500);
@@ -290,7 +302,7 @@ test('one 2D canvas: the stream is dense while it runs and gone before the verdi
   expect(await page.locator('.td-canvas').evaluate((c: HTMLCanvasElement) => !!c.getContext('2d'))).toBe(true);
   await goto(page, 3.6 * W);
   const running = await ink(page);
-  await goto(page, 6.5 * W);
+  await hold(page, 'verdict');
   const still = await ink(page);
   expect(running).toBeGreaterThan(1500);
   expect(still).toBeLessThan(running / 3);   // only the faint rail remains: no stream points
@@ -309,14 +321,14 @@ test('gyro adds depth only: at most 6 px on the slabs, and it never changes prog
   const pos = () => page.locator('.td-slab').evaluateAll((els) => els.map((e) => { const m = (e as HTMLElement).style.transform.match(/translate3d\(([^,]+),([^,]+),/)!; return [parseFloat(m[1]), parseFloat(m[2])]; }));
   await page.waitForTimeout(1200);
   const before = await pos();
-  const p0 = await page.locator('.td-stage').getAttribute('data-p');
+  const p0 = await page.locator('.td-stage').getAttribute('data-r');
   await page.evaluate(() => window.dispatchEvent(Object.assign(new Event('deviceorientation'), { gamma: 90, beta: 180 })));
   await page.waitForTimeout(700);
   const after = await pos();
   const moved = after.map((a, i) => Math.hypot(a[0] - before[i][0], a[1] - before[i][1]));
   moved.forEach((d) => expect(d).toBeLessThanOrEqual(6 * Math.SQRT2 + 0.01));
   expect(Math.max(...moved)).toBeGreaterThan(1);
-  expect(await page.locator('.td-stage').getAttribute('data-p')).toBe(p0);
+  expect(await page.locator('.td-stage').getAttribute('data-r')).toBe(p0);
   expect(new URL(page.url()).pathname).toBe('/work/maltrace/');
   expect(moved[3]).toBeGreaterThan(moved[0]);   // the deepest slab moves most
 });
@@ -378,7 +390,7 @@ test.describe('mobile (390 px)', () => {
 
   test('the process nodes and the total sit in the remaining space inside the stage', async ({ page }) => {
     await ready(page);
-    await goto(page, 4.08 * W);
+    await goto(page, 3.9 * W);
     await expect(page.locator('.td-total')).toHaveText('94,958 API calls');
     const stage = (await page.locator('.td-stage').boundingBox())!;
     for (const sel of ['.td-total', '.td-layer:has(.td-proc) .td-lab']) {
@@ -390,8 +402,8 @@ test.describe('mobile (390 px)', () => {
 
   test('the same 9-state timeline and the same real numbers', async ({ page }) => {
     await ready(page);
-    for (let k = 0; k < 9; k++) { await goto(page, (k + 0.5) * W); await expect(page.locator('.td-head')).toContainText(`0${k} ${NAMES[k]}`); }
-    await goto(page, 6.5 * W);
+    for (let k = 0; k < 9; k++) { if (k === 6) await hold(page, 'verdict'); else await goto(page, (k + 0.5) * W); await expect(page.locator('.td-head')).toContainText(`0${k} ${NAMES[k]}`); }
+    await hold(page, 'verdict');
     await expect(page.locator('.td-verdict')).toHaveText('95% malicious confidence on this sample');
     await goto(page, 1);
     expect(await page.locator('.td-tag').count()).toBe(13);

@@ -5,12 +5,11 @@
  *
  * A key is [at, value, ease?]. `ease` shapes the segment that ARRIVES at the key.
  */
-export type EaseName = 'linear' | 'in' | 'out' | 'inout';
+export type EaseName = 'linear' | 'out' | 'inout';
 export type Key = readonly [at: number, value: number, ease?: EaseName];
 
 export const EASES: Record<EaseName, (t: number) => number> = {
   linear: (t) => t,
-  in: (t) => t * t * t,
   out: (t) => 1 - (1 - t) ** 3,
   inout: (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2),
 };

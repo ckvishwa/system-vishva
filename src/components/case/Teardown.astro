@@ -47,6 +47,7 @@ const payload = {
   t: `${t.file.name} · ${fmt(t.file.size)} bytes`,
   a: `Analysis ${t.analysis_id}`,
   s: t.sections?.map((x, i) => ({ l: lines(x, i), e: x.entropy, z: x.size, o: x.raw_offset })),
+  ln: Math.max(0, ...(t.sections ?? []).map((x, i) => lines(x, i).split(String.fromCharCode(10)).length)),
   ap: apis.length ? apis : undefined,
   tot: t.api_total,
   np: t.process_count,

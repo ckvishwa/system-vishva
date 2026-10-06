@@ -63,7 +63,7 @@ test('the displayed progress lands exactly on the scroll position and then no fr
   await expect(page.locator('.td-stage')).toBeVisible();
   await page.waitForTimeout(1500);
   await page.evaluate(() => { const t = document.querySelector('.td-track')!; scrollTo(0, t.getBoundingClientRect().top + scrollY + 0.5 * (t.clientHeight - innerHeight)); });
-  await page.waitForFunction(() => Math.abs(+(document.querySelector('.td-stage') as HTMLElement).dataset.p! - 0.5) < 0.0006, null, { timeout: 5000 });
+  await page.waitForFunction(() => Math.abs(+(document.querySelector('.td-stage') as HTMLElement).dataset.r! - 0.5) < 0.0006, null, { timeout: 5000 });
   await page.waitForTimeout(400);
   await page.evaluate(() => { (window as any).__f = 0; });
   await page.waitForTimeout(1500);
@@ -79,7 +79,7 @@ test('a wheel burst glides: progress moves toward the target over several frames
   await page.evaluate(() => {
     const w = window as any; w.__p = [] as number[];
     const s = document.querySelector('.td-stage') as HTMLElement;
-    new MutationObserver(() => w.__p.push(+s.dataset.p!)).observe(s, { attributes: true, attributeFilter: ['data-p'] });
+    new MutationObserver(() => w.__p.push(+s.dataset.r!)).observe(s, { attributes: true, attributeFilter: ['data-r'] });
     scrollBy(0, 900); // one instant jump in scroll position
   });
   await page.waitForTimeout(1500);

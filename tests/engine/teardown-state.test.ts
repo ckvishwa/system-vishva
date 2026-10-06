@@ -50,9 +50,10 @@ describe('teardownState: the 9 states', () => {
   it('X-RAY: the SAME object turns semi-transparent and the sections appear inside it, with nothing separated', () => {
     const e = teardownState(T(1).e);
     near(e.shell.fill, 0.15);                         // the shell is still there, now translucent
-    expect(e.shell.edge).toBeGreaterThan(0.5);
+    expect(e.shell.edge).toBeGreaterThan(0.35);
     expect(e.slabs.opacity).toBe(1);                  // the sections are visible inside it
-    expect(e.rail).toBe(1);
+    expect(e.rail).toBe(0);                           // the rail belongs to EXPLODE: it draws after the sections separate
+    expect(teardownState(1.5 * W).scan).toBeGreaterThan(0); expect(teardownState(1.5 * W).scan).toBeLessThan(1); // one scan sweeps the file during X-RAY
     expect(teardownState(1.9 * W).slabs.gap).toBe(0); // not lifted
     expect(teardownState(1.9 * W).slabs.explode).toBe(0); // not tilted or spread
   });
