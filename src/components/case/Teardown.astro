@@ -1,0 +1,131 @@
+---
+// MalTrace teardown (ADR-0016). This component renders the whole thing as a static document: seven states in reading
+// order with every number visible. That is what no-JS, reduced motion, tier C, /plain and screen readers get. On tier A/B
+// the lazy script (engine/motion/teardown.ts) reads this same markup (data-td-* attributes), builds an aria-hidden sticky
+// stage from it, and visually hides this document. It never invents anything: values come from the two validated artifacts
+// and from claims.yaml, and a missing field hides its layer.
+import { getEntry } from 'astro:content';
+import { parse } from 'yaml';
+import teardownRaw from '../../content/work/maltrace/maltrace-teardown.json';
+import shapRaw from '../../content/work/maltrace/shap_wannacry_exe.json';
+import featuresRaw from '../../content/work/maltrace/maltrace-features.json';
+import mdxRaw from '../../content/work/maltrace.mdx?raw';
+import { teardownSchema, shapSchema, teardownProblems } from '../../content/teardown';
+import { STATES, entropyNote } from '../../engine/motion/teardown-state';
+
+interface Props { pipeline?: string[] }
+const { pipeline = [] } = Astro.props;
+
+// Fail the build, loudly, if either artifact is malformed or disagrees with the ledger or maltrace.mdx.
+const t = teardownSchema.parse(teardownRaw);
+const s = shapSchema.parse(shapRaw);
+const sample = (parse(mdxRaw.match(/^---\r?\n([\s\S]*?)\r?\n---/)![1]) as { sample?: any }).sample;
+const ids = ['maltrace-api-calls', 'maltrace-confidence', 'maltrace-features', 'maltrace-features-dynamic', 'maltrace-features-static'];
+const claim = Object.fromEntries(await Promise.all(ids.map(async (id) => [id, (await getEntry('claims', id))?.data])));
+const problems = teardownProblems({ teardown: t, shap: s, sample, claims: Object.fromEntries(ids.map((id) => [id, claim[id]?.value])), staticFeatures: featuresRaw.static });
+if (problems.length) throw new Error(`MalTrace teardown inputs are inconsistent:\n  ${problems.join('\n  ')}`);
+
+const fmt = (n: number) => n.toLocaleString('en-US');
+const verdict = `${claim['maltrace-confidence']!.display} malicious confidence on this sample`;
+const model = pipeline.find((p) => /forest/i.test(p));
+const indicators = [...(s.top_malware_indicators ?? []), ...(s.top_benign_indicators ?? [])];
+const signed = (n: number) => `${n > 0 ? '+' : ''}${n}`;
+const mitre = (id: string) => `https://attack.mitre.org/techniques/${id.replace('.', '/')}/`;
+const head = (i: number) => `${String(i).padStart(2, '0')} ${STATES[i].name}`;
+---
+<section class="wrap teardown" aria-labelledby="td-h" data-teardown data-model={model} data-dynamic={claim['maltrace-features-dynamic']?.value} data-static={claim['maltrace-features-static']?.value} data-base={s.shap_base_value}>
+  <h2 id="td-h" class="mono muted">Teardown</h2>
+  <div class="td-doc">
+    <section class="td-state" aria-labelledby="td-0">
+      <h3 id="td-0" class="mono">{head(0)} <span class="muted">{STATES[0].meaning}</span></h3>
+      <p class="td-big" data-td-file data-name={t.file.name} data-size={t.file.size} data-sha={t.file.sha256}>{t.file.name}, {fmt(t.file.size)} bytes</p>
+      <p class="mono">SHA-256 <span class="td-hash">{t.file.sha256}</span></p>
+      {t.file.type && <p class="mono muted">{t.file.type}</p>}
+    </section>
+
+    {t.sections && (
+      <section class="td-state" aria-labelledby="td-1">
+        <h3 id="td-1" class="mono">{head(1)} <span class="muted">{STATES[1].meaning}</span></h3>
+        <table class="mono">
+          <caption class="muted">PE sections: slab height is proportional to size; the real sizes are listed here.</caption>
+          <thead><tr><th scope="col">Section</th><th scope="col">Size, bytes</th><th scope="col">Entropy</th><th scope="col">Note</th></tr></thead>
+          <tbody>
+            {t.sections.map((x) => (
+              <tr data-td-sec data-name={x.name} data-size={x.size} data-entropy={x.entropy} data-note={entropyNote(x.entropy) ?? undefined}>
+                <th scope="row">{x.name}</th><td>{fmt(x.size)}</td><td>{x.entropy.toFixed(2)}</td><td class="info">{entropyNote(x.entropy)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+    )}
+
+    {(t.api_total !== undefined || t.api_top) && (
+      <section class="td-state" aria-labelledby="td-2">
+        <h3 id="td-2" class="mono">{head(2)} <span class="muted">{STATES[2].meaning}</span></h3>
+        {t.api_total !== undefined && <p class="td-big" data-td-total data-value={t.api_total}>{fmt(t.api_total)} API calls{t.process_count !== undefined && <span class="muted"> across {t.process_count} processes</span>}</p>}
+        {t.api_top && (
+          <table class="mono">
+            <caption class="muted">Top {t.api_top.length} API calls by count</caption>
+            <thead><tr><th scope="col">API</th><th scope="col">Calls</th></tr></thead>
+            <tbody>{t.api_top.map((a) => <tr data-td-api data-name={a.api} data-count={a.count}><th scope="row">{a.api}</th><td>{fmt(a.count)}</td></tr>)}</tbody>
+          </table>
+        )}
+      </section>
+    )}
+
+    <section class="td-state" aria-labelledby="td-3">
+      <h3 id="td-3" class="mono">{head(3)} <span class="muted">{STATES[3].meaning}</span></h3>
+      <p class="td-big">{claim['maltrace-features']!.display} features</p>
+      <p class="mono">{claim['maltrace-features-dynamic']!.display} dynamic behavioral + {claim['maltrace-features-static']!.display} static PE.</p>
+      <p class="mono muted">Static PE features: <span>{featuresRaw.static.map((n) => <span data-td-static data-name={n}>{n} </span>)}</span></p>
+    </section>
+
+    <section class="td-state" aria-labelledby="td-4">
+      <h3 id="td-4" class="mono">{head(4)} <span class="muted">{STATES[4].meaning}</span></h3>
+      <p class="td-verdict-static inverted" data-tone="risk" data-td-verdict>{verdict}</p>
+      <p class="mono muted" data-td-sub>A single-sample prediction, not model accuracy.</p>
+      {s.shap_base_value !== undefined && <p class="mono muted">SHAP base value {s.shap_base_value}</p>}
+    </section>
+
+    {indicators.length > 0 && (
+      <section class="td-state" aria-labelledby="td-5">
+        <h3 id="td-5" class="mono">{head(5)} <span class="muted">{STATES[5].meaning}</span></h3>
+        <table class="mono">
+          <caption class="muted">Per-feature SHAP contributions: positive pushes toward malicious, negative away from it.</caption>
+          <thead><tr><th scope="col">Feature</th><th scope="col">Value</th><th scope="col">SHAP</th><th scope="col">Direction</th></tr></thead>
+          <tbody>{indicators.map((i) => <tr data-td-shap data-name={i.feature} data-impact={i.shap_impact} data-dir={i.direction}><th scope="row">{i.feature}</th><td>{i.value}</td><td>{signed(i.shap_impact)}</td><td>{i.direction}</td></tr>)}</tbody>
+        </table>
+      </section>
+    )}
+
+    {(t.attack_ids?.length || t.signatures?.length) && (
+      <section class="td-state" aria-labelledby="td-6">
+        <h3 id="td-6" class="mono">{head(6)} <span class="muted">{STATES[6].meaning}</span></h3>
+        {t.attack_ids && <ul class="mono tags">{t.attack_ids.map((id) => <li><a data-td-attack href={mitre(id)} rel="noopener" target="_blank">{id}</a></li>)}</ul>}
+        {t.signatures && (
+          <table class="mono">
+            <caption class="muted">{t.signatures.length} sandbox signatures</caption>
+            <thead><tr><th scope="col">Signature</th><th scope="col">Severity</th></tr></thead>
+            <tbody>{t.signatures.map((x) => <tr><th scope="row">{x.name}</th><td>{x.severity}</td></tr>)}</tbody>
+          </table>
+        )}
+      </section>
+    )}
+  </div>
+</section>
+<script>
+  import { reducedMotion } from '../../engine/motion/tokens';
+
+  // Lazy: the stage code is a separate chunk, fetched only on a case study that has the teardown, and never under
+  // reduced motion or tier C (the static document is the whole experience there).
+  let stop: (() => void) | null = null;
+  const release = () => { stop?.(); stop = null; };
+  document.addEventListener('astro:page-load', () => {
+    release();
+    const root = document.querySelector<HTMLElement>('[data-teardown]');
+    if (!root || reducedMotion()) return;
+    import('../../engine/motion/teardown').then((m) => { stop = m.initTeardown(root); }).catch(() => {});
+  });
+  document.addEventListener('astro:before-swap', release);
+</script>

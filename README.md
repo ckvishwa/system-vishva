@@ -81,6 +81,7 @@ inline handlers; its single inline script (the pre-paint render-tier decision) i
 | [0013](docs/adr/0013-brutalist-telemetry.md) | Brutalist telemetry layer |
 | [0014](docs/adr/0014-scroll-story-without-gsap.md) | Scroll story without GSAP |
 | [0015](docs/adr/0015-evidence-kinds.md) | Evidence kinds: public, self-hosted, on request |
+| [0016](docs/adr/0016-teardown-pattern.md) | Teardown pattern: scroll-driven breakdown from validated real inputs |
 
 The full architecture record is [docs/ARD.md](docs/ARD.md); scroll storyboards are in `docs/storyboards/`.
 

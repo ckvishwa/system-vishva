@@ -1,0 +1,4 @@
+{
+  "source": "https://github.com/ckvishwa/Maltrace/blob/12a46508d789a273fe05b133bbd0eed94071489b/README.md#L201-L212",
+  "static": ["pe_entropy", "pe_num_sections", "pe_has_upx", "pe_wx_section", "pe_is_64bit", "pe_is_signed", "pe_has_tls", "pe_num_imports"]
+}

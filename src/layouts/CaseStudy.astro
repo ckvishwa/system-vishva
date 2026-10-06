@@ -2,6 +2,7 @@
 import Base from './Base.astro';
 import ScrollStory from '../islands/ScrollStory.astro';
 import ReleaseGateDemo from '../islands/ReleaseGateDemo.astro';
+import Teardown from '../components/case/Teardown.astro';
 import { getEntries } from 'astro:content';
 import { hashLabel } from '../engine/transitions/hash';
 
@@ -35,6 +36,8 @@ const claims = d.claimIds.length ? await getEntries(d.claimIds.map((id: string) 
     <ScrollStory id={entry.id} pipeline={d.pipeline} story={d.story} claims={claims}>
       <slot />
     </ScrollStory>
+
+    {d.teardown && <Teardown pipeline={d.pipeline} />}
 
     {d.demo === 'release-gate' && <ReleaseGateDemo />}
 

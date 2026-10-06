@@ -42,6 +42,7 @@ const work = defineCollection({
       md5: z.string().regex(/^[a-fA-F0-9]{32}$/),
       sizeBytes: z.number().int().positive(),
     }).optional(),
+    teardown: z.boolean().optional(), // scroll-driven teardown (components/case/Teardown.astro); needs the artifacts in work/<slug>/
     demo: z.enum(['release-gate']).optional(), // an interactive island shown under the story
     repo: z.url().optional(),
     draft: z.boolean().default(false),

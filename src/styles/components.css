@@ -92,6 +92,46 @@ html[data-tier='C'] :is(.hard, .hard-lift):is(:hover, :focus-visible) { transfor
 .drawer-body { display: grid; gap: var(--s-3); padding: var(--s-4); overflow-wrap: anywhere; }
 .drawer-body p { margin: 0; }
 
+/* ---- MalTrace teardown (ADR-0016). The static document is the default; .is-live (set by the lazy script on tier A/B) swaps in the sticky stage. ---- */
+.teardown { display: grid; gap: var(--s-4); padding-block: var(--s-7); }
+.td-state { display: grid; gap: var(--s-3); padding-block: var(--s-5); border-top: 1px solid var(--c-rule); }
+.td-state:first-child { border-top: 4px solid var(--c-text); }
+.td-state table { width: 100%; border-collapse: collapse; font-size: var(--t-xs); }
+.td-state caption { text-align: left; padding-bottom: var(--s-2); }
+.td-state th, .td-state td { text-align: left; font-weight: 400; padding: var(--s-2) var(--s-3) var(--s-2) 0; border-bottom: 1px solid var(--c-rule); overflow-wrap: anywhere; }
+.td-state thead th { color: var(--c-muted); }
+.td-big { font: 650 var(--t-xl) / 1.1 var(--f-sans); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.td-hash { overflow-wrap: anywhere; }
+.td-verdict-static { padding: var(--s-4); font: 650 var(--t-lg) / 1.15 var(--f-sans); }
+.inverted[data-tone='risk'] { background: var(--c-risk); color: var(--c-bg); }
+.tags { list-style: none; display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.tags a { display: block; border: 1px solid var(--c-text); padding: 2px var(--s-2); }
+.tags a:hover { border-color: var(--c-system); }
+.info { color: var(--c-info); }
+.td-track { height: 600vh; position: relative; }
+.td-stage { position: sticky; top: 56px; height: calc(100dvh - 56px); overflow: hidden; background: var(--c-bg); }
+.td-stage > *, .td-layer > * { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.td-layer { inset: 0; width: 100%; height: 100%; }
+.td-lab { white-space: pre-line; }
+.td-head, .td-title, .td-lab, .td-api, .td-total, .td-model { font-size: var(--t-xs); }
+.td-head { color: var(--c-muted); }
+.td-sha { font-size: 10px; overflow-wrap: anywhere; }
+.td-total { font: 650 var(--t-lg) / 1 var(--f-sans); font-variant-numeric: tabular-nums; }
+.td-slab { border: 1px solid var(--c-text); overflow: hidden; }
+.td-fill { position: absolute; inset: 0; background: var(--c-text); }
+.td-bar { height: 3px; background: var(--c-info); transform-origin: 0 50%; }
+.td-cell { border: 1px solid var(--c-muted); }
+.td-cell.is-static { border-color: var(--c-info); }
+.td-model { display: grid; place-items: center; border: 1px solid var(--c-text); background: var(--c-bg); }
+.td-verdict { display: grid; align-items: center; padding: 0 var(--s-4); background: var(--c-risk); color: var(--c-bg); font: 650 var(--t-base) / 1.1 var(--f-sans); }
+.td-redact { background: var(--c-text); }
+.td-push { height: 8px; }
+.td-push.is-risk { background: var(--c-risk); }
+.td-push.is-ok { background: var(--c-system); }
+.td-tag { border: 1px solid var(--c-text); padding: var(--s-1) var(--s-2); text-align: center; font-size: var(--t-xs); }
+/* Live: the document stays for assistive tech and keyboard, off-screen until a link inside it takes focus. */
+.teardown.is-live .td-doc:not(:focus-within) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
 /* ---- page utilities. Inline style attributes are not allowed (strict CSP), so spacing lives here. ---- */
 .pad-9 { padding-block: var(--s-9); }
 .mt-4 { margin-top: var(--s-4); }
