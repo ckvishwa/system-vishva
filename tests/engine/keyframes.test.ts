@@ -42,15 +42,16 @@ describe('sample', () => {
 describe('the teardown timeline', () => {
   it('every track is well formed', () => { for (const [name, keys] of Object.entries(TRACKS)) expect(keyProblem(keys), name).toBeNull(); });
 
-  it('every value stays within 0..1', () => {
+  it('every value stays within its range: 0..1, the camera scale 0.62..1.1, the camera lift 0..-0.14', () => {
     for (const [name, keys] of Object.entries(TRACKS)) for (let i = 0; i <= 1000; i++) {
       const v = sample(keys, i / 1000);
-      expect(v, name).toBeGreaterThanOrEqual(0); expect(v, name).toBeLessThanOrEqual(1);
+      const [lo, hi] = name === 'camScale' ? [0.62, 1.1] : name === 'camY' ? [-0.14, 0] : [0, 1];
+      expect(v, name).toBeGreaterThanOrEqual(lo - 1e-9); expect(v, name).toBeLessThanOrEqual(hi + 1e-9);
     }
   });
 
   it('transition windows are one state plus 15% long, centred on the boundary', () => {
-    for (let k = 1; k <= 5; k++) {
+    for (let k = 1; k <= 6; k++) {
       const w = T(k);
       near(w.e - w.s, W + OVERLAP);
       near((w.s + w.e) / 2, k * W);
@@ -59,43 +60,50 @@ describe('the teardown timeline', () => {
   });
 
   it('neighbouring windows overlap by 15% of a state, so nothing waits for the last thing to finish', () => {
-    for (let k = 1; k < 6; k++) {
+    for (let k = 1; k < 7; k++) {
       const overlap = T(k).e - T(k + 1).s;
       near(overlap / W, 0.15);
       expect(overlap).toBeGreaterThan(0);
     }
   });
 
-  it('the last window ends just before the end of the scroll (a short rest to read the map); the first state has no entrance', () => {
-    expect(T(6).e).toBeLessThan(1);
-    expect(1 - T(6).e).toBeLessThan(W / 2);
+  it('the last window ends just before the end of the scroll (a short rest on the chain); the first state has no entrance', () => {
+    expect(T(7).e).toBeLessThan(1);
+    expect(1 - T(7).e).toBeLessThan(W / 2);
     expect(T(0).s).toBe(0);
   });
 
   it('inside an overlap, the old layer is still going while the next one has started', () => {
-    // CRACK (T1) is still opening the slabs when DETONATE's stream (T2) starts to appear
+    // CRACK (T1) is still opening the slabs when DETONATE (T2) starts: the stream begins to appear
     const p = (T(1).e + T(2).s) / 2;
     expect(p).toBeLessThan(T(1).e);
     expect(p).toBeGreaterThan(T(2).s);
     expect(sample(TRACKS.slabsGap, p)).toBeGreaterThan(0.2);
-    expect(sample(TRACKS.slabsGap, p)).toBeLessThanOrEqual(1);
-    expect(sample(TRACKS.streamOpacity, p)).toBeGreaterThan(0);
-    // and DISTILL's grid is already arriving while the stream is still leaving
+    expect(sample(TRACKS.slabsX, p)).toBeGreaterThan(0);
+    // DISTILL's pull has begun while the stream is still on screen and the matrix is arriving
     const q = T(3).s + 0.3 * W;
-    expect(sample(TRACKS.gridOpacity, q)).toBeGreaterThan(0.5);
+    expect(sample(TRACKS.pull, q)).toBeGreaterThan(0);
     expect(sample(TRACKS.streamOpacity, q)).toBeGreaterThan(0);
+    expect(sample(TRACKS.gridOpacity, q)).toBeGreaterThan(0.5);
+    // MAP starts before EXPLAIN has finished, and the verdict is already docked
+    const r = (T(5).e + T(6).s) / 2;
+    expect(sample(TRACKS.explainBars, r)).toBeGreaterThan(0.9);
+    expect(sample(TRACKS.explainOpacity, r)).toBeGreaterThan(0.9); // bars still fully there as the first nodes leave their tips
+    expect(sample(TRACKS.mapGrow, r)).toBeGreaterThan(0);
+    expect(sample(TRACKS.verdictDock, r)).toBeGreaterThan(0.9);
   });
 
-  it('boundary values: sealed at 0, fully exploded after DETONATE, only the map left at the end', () => {
+  it('boundary values: sealed at 0, exploded after DETONATE, the chain at the end', () => {
     expect(sample(TRACKS.slabsGap, 0)).toBe(0);
     near(sample(TRACKS.slabsGap, T(1).e), 0.25);
     near(sample(TRACKS.slabsGap, T(2).e), 1);
     expect(sample(TRACKS.slabsOpacity, 1)).toBe(0);
     expect(sample(TRACKS.gridOpacity, 1)).toBe(0);
-    near(sample(TRACKS.mapLocked, 1), 1);
+    near(sample(TRACKS.mapGrow, 1), 1);
     near(sample(TRACKS.verdictDock, T(5).e), 1);
-    near(sample(TRACKS.verdictReveal, T(4).e), 1);
+    near(sample(TRACKS.chainOpacity, 1), 1);
+    near(sample(TRACKS.camScale, 1), 0.62);
   });
 
-  it('there are seven states', () => expect(STATE_COUNT).toBe(7));
+  it('there are eight states', () => expect(STATE_COUNT).toBe(8));
 });

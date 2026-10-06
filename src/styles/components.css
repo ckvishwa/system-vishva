@@ -108,13 +108,14 @@ html[data-tier='C'] :is(.hard, .hard-lift):is(:hover, :focus-visible) { transfor
 .tags a { display: block; border: 1px solid var(--c-text); padding: 2px var(--s-2); }
 .tags a:hover { border-color: var(--c-system); }
 .info { color: var(--c-info); }
-.td-track { height: 600vh; position: relative; }
+.td-track { height: 700vh; position: relative; }
 .td-stage { position: sticky; top: 56px; height: calc(100svh - 56px); overflow: hidden; contain: layout paint; background: var(--c-bg); }
 .td-stage.is-hot { will-change: transform; }
-.td-stage > *, .td-layer > * { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.td-stage > *, .td-layer > *, .td-world > * { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.td-world { inset: 0; width: 100%; height: 100%; }
 .td-layer { inset: 0; width: 100%; height: 100%; }
 .td-lab { white-space: pre-line; }
-.td-head, .td-title, .td-lab, .td-api, .td-total, .td-model { font-size: var(--t-xs); }
+.td-head, .td-an, .td-title, .td-lab, .td-api, .td-total, .td-model, .td-chain { font-size: var(--t-xs); }
 .td-head { color: var(--c-muted); }
 .td-sha { font-size: 10px; overflow-wrap: anywhere; }
 .td-total { font: 650 var(--t-lg) / 1 var(--f-sans); font-variant-numeric: tabular-nums; }
@@ -122,6 +123,9 @@ html[data-tier='C'] :is(.hard, .hard-lift):is(:hover, :focus-visible) { transfor
 .td-fill { position: absolute; inset: 0; background: var(--c-text); }
 .td-bar { height: 3px; background: var(--c-info); transform-origin: 0 50%; }
 .td-cell { border: 1px solid var(--c-muted); }
+.td-proc { border: 1px solid var(--c-text); background: var(--c-text); }
+.td-chain { border: 1px solid var(--c-rule); padding: var(--s-2) var(--s-3); display: grid; align-content: space-between; overflow: hidden; }
+.td-chain-v { color: var(--c-text); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .td-cell.is-static { border-color: var(--c-info); }
 .td-model { display: grid; place-items: center; border: 1px solid var(--c-text); background: var(--c-bg); }
 .td-verdict { display: grid; align-items: center; padding: 0 var(--s-4); background: var(--c-risk); color: var(--c-bg); font: 650 var(--t-base) / 1.1 var(--f-sans); }

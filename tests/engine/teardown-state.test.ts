@@ -1,34 +1,39 @@
 import { describe, it, expect } from 'vitest';
-import { teardownState, stageProgress, slabHeights, entropyNote, barLengths, STATES, STATE_COUNT, T, W, type Layers } from '../../src/engine/motion/teardown-state';
+import { teardownState, stageProgress, slabHeights, entropyNote, barLengths, STATES, STATE_COUNT, TRACKS, STILL, T, W, type Layers } from '../../src/engine/motion/teardown-state';
+import { sample } from '../../src/engine/motion/keyframes';
 
-const at = (k: number) => k / STATE_COUNT;
 const near = (a: number, b: number) => expect(a).toBeCloseTo(b, 9);
 
-describe('teardownState: the 7 states', () => {
+describe('teardownState: the 8 states', () => {
   it('names them, each with one meaning from the motion vocabulary', () => {
-    expect(STATES.map((s) => s.name)).toEqual(['SEALED', 'CRACK', 'DETONATE', 'DISTILL', 'DECIDE', 'EXPLAIN', 'MAP']);
-    expect(STATES.map((s) => s.meaning)).toEqual(['state', 'hierarchy', 'flow', 'cause', 'change', 'cause', 'dependency']);
+    expect(STATES.map((s) => s.name)).toEqual(['SEALED', 'CRACK', 'DETONATE', 'DISTILL', 'DECIDE', 'EXPLAIN', 'MAP', 'PULL-BACK']);
+    expect(STATES.map((s) => s.meaning)).toEqual(['state', 'hierarchy', 'flow', 'cause', 'change', 'cause', 'dependency', 'flow']);
   });
 
   it('maps progress to the state index at every boundary', () => {
     for (let k = 0; k < STATE_COUNT; k++) {
-      expect(teardownState(at(k)).index, `start of ${k}`).toBe(k);
-      expect(teardownState(at(k) + 1e-6).index).toBe(k);
-      expect(teardownState(at(k + 1) - 1e-6).index).toBe(k);
+      expect(teardownState(k * W).index, `start of ${k}`).toBe(k);
+      expect(teardownState(k * W + 1e-6).index).toBe(k);
+      expect(teardownState((k + 1) * W - 1e-6).index).toBe(k);
     }
-    expect(teardownState(1).index).toBe(6);
+    expect(teardownState(1).index).toBe(STATE_COUNT - 1);
   });
 
-  it('SEALED (p=0): one solid block, hash not yet settled, everything else off', () => {
+  it('SEALED (p=0): a pulled-out camera on one solid block, nothing else on', () => {
     const l = teardownState(0);
-    expect(l.slabs).toEqual({ opacity: 1, gap: 0, labels: 0 });
+    expect(l.cam.scale).toBeLessThan(0.9);
+    expect(l.slabs.gap).toBe(0);
+    expect(l.slabs.x).toBe(0);
+    expect(l.slabs.labels).toBe(0);
     expect(l.hash.settle).toBe(0);
-    for (const k of ['stream', 'grid', 'model', 'verdict', 'explain', 'map'] as const) expect((l[k] as { opacity: number }).opacity, k).toBe(0);
+    expect(l.stream.opacity + l.procs.opacity + l.grid.opacity + l.model.opacity + l.verdict.opacity + l.explain.opacity + l.chain.opacity).toBe(0);
+    expect(l.pull).toBe(0);
   });
 
-  it('the hash has settled by the middle of SEALED', () => {
-    near(teardownState(0.5 * W).hash.settle, 1);
-    expect(teardownState(0.25 * W).hash.settle).toBeGreaterThan(0.5); // ease-out: most of it lands early
+  it('SEALED: the camera pushes in and the hash has settled before CRACK', () => {
+    expect(teardownState(0.8 * W).cam.scale).toBe(1);
+    near(teardownState(0.6 * W).hash.settle, 1);
+    expect(teardownState(0.3 * W).hash.settle).toBeGreaterThan(0.5);
   });
 
   it('CRACK opens the block a quarter of the way and shows the labels', () => {
@@ -37,71 +42,115 @@ describe('teardownState: the 7 states', () => {
     near(teardownState(T(1).s).slabs.gap, 0);
   });
 
-  it('DETONATE pulls the slabs fully apart and runs the API stream and its total to the end', () => {
+  it('DETONATE pulls the slabs apart and aside, runs the stream, and grows the process nodes', () => {
     near(teardownState(T(2).e).slabs.gap, 1);
+    near(teardownState(T(2).e).slabs.x, 1);
     const mid = teardownState((T(2).s + T(2).e) / 2);
     expect(mid.stream.opacity).toBe(1);
     expect(mid.stream.bars).toBeGreaterThan(0.3);
     expect(mid.stream.bars).toBeLessThan(0.7);
-    near(teardownState(T(2).e).stream.total, 1);
+    near(teardownState(T(2).e).stream.bars, 1);
+    near(teardownState(T(2).e).procs.grow, 1);
+    expect(teardownState(T(2).e).procs.opacity).toBe(1);
   });
 
-  it('DISTILL: the stream gives way to the 54-cell grid, which is assembled by the end of the window', () => {
-    near(teardownState(T(3).s).grid.assemble, 0);
+  it('DISTILL pulls everything inward and the matrix assembles', () => {
+    near(teardownState(T(3).s).pull, 0);
+    near(teardownState(T(3).e).pull, 1);
     near(teardownState(T(3).e).grid.assemble, 1);
-    expect(teardownState(3.3 * W).slabs.opacity).toBeLessThan(0.5);
-    expect(teardownState(3.3 * W).grid.opacity).toBe(1);
+    expect(teardownState(T(3).e).slabs.opacity).toBe(0);
+    expect(teardownState(T(3).e).procs.opacity).toBe(0);
+    expect(teardownState(3.4 * W).grid.opacity).toBe(1);
   });
 
-  it('DECIDE: cells converge into the model node, then the verdict is revealed', () => {
+  it('DECIDE: the matrix funnels into the model, then stillness, then the verdict stamps', () => {
     near(teardownState(T(4).s).grid.converge, 0);
-    near(teardownState(T(4).e).grid.converge, 1);
-    expect(teardownState(T(4).s + 0.5 * W).model.opacity).toBe(1);
-    near(teardownState(T(4).e).verdict.reveal, 1);
-    expect(teardownState(T(4).e).verdict.opacity).toBe(1);
-    expect(teardownState(T(4).s).verdict.opacity).toBe(0);
+    near(teardownState(STILL.s).grid.converge, 1);
+    expect(teardownState(STILL.s).grid.opacity).toBe(0);
+    expect(teardownState(STILL.s).model.opacity).toBe(1);
+    expect(teardownState(STILL.stamp).verdict.opacity).toBe(0);
+    near(teardownState(STILL.end).verdict.opacity, 1);
+    near(teardownState(STILL.end).verdict.reveal, 1);
+    expect(teardownState(STILL.s).cam.scale).toBeGreaterThan(1.05); // the camera has pushed in on the model
   });
 
-  it('EXPLAIN: the verdict docks and the contribution bars grow', () => {
+  it('EXPLAIN: the verdict docks and the node opens out into the bars', () => {
     near(teardownState(T(5).s).verdict.dock, 0);
     near(teardownState(T(5).e).verdict.dock, 1);
-    near(teardownState(T(5).s).explain.bars, 0);
+    near(teardownState(T(5).s).explain.open, 0);
+    near(teardownState(T(5).e).explain.open, 1);
     near(teardownState(T(5).e).explain.bars, 1);
-    expect(teardownState(5.3 * W).explain.opacity).toBe(1);
+    expect(teardownState(T(5).e).model.opacity).toBe(0);
   });
 
-  it('MAP: ATT&CK tags lock in; at the end only the verdict and the map are left', () => {
-    near(teardownState(T(6).s).map.locked, 0);
-    near(teardownState(1).map.locked, 1);
-    expect(teardownState(1).map.opacity).toBe(1);
+  it('MAP: the ATT&CK nodes grow out of the bars', () => {
+    near(teardownState(T(6).s).map.grow, 0);
+    near(teardownState(T(6).e).map.grow, 1);
+    expect(teardownState(T(6).s).explain.opacity).toBe(1);               // the bars are there for the nodes to grow out of...
+    expect(teardownState(T(6).e).explain.opacity).toBe(0);               // ...and have handed over by the time the nodes are placed
+  });
+
+  it('PULL-BACK: the camera zooms out and the chain is what is left to read', () => {
+    near(teardownState(T(7).e).cam.scale, 0.62);
+    expect(teardownState(T(7).e).cam.y).toBeLessThan(0);
+    near(teardownState(1).chain.opacity, 1);
     expect(teardownState(1).verdict.opacity).toBe(1);
+    expect(teardownState(1).explain.opacity).toBe(0);
     expect(teardownState(1).slabs.opacity).toBe(0);
     expect(teardownState(1).grid.opacity).toBe(0);
-    expect(teardownState(1).explain.opacity).toBe(0);
   });
 
   it('local runs 0..1 inside each state', () => {
     for (let k = 0; k < STATE_COUNT; k++) {
-      near(teardownState(at(k)).local, 0);
-      near(teardownState(at(k + 0.5)).local, 0.5);
+      near(teardownState(k * W).local, 0);
+      near(teardownState((k + 0.5) * W).local, 0.5);
     }
     near(teardownState(1).local, 1);
   });
 });
 
+describe('STILLNESS: the verdict stamp gets the whole frame to itself', () => {
+  const others = Object.keys(TRACKS).filter((k) => k !== 'verdictOpacity' && k !== 'verdictReveal') as (keyof typeof TRACKS)[];
+
+  it('the stamp is short and fast, inside DECIDE', () => {
+    expect(STILL.end - STILL.stamp).toBeLessThan(0.1 * W);
+    expect(STILL.stamp).toBeGreaterThan(4 * W);
+    expect(STILL.end).toBeLessThan(5 * W);
+  });
+
+  it('while the verdict stamps, no other value moves at all', () => {
+    for (let i = 0; i <= 50; i++) {
+      const p = STILL.stamp + ((STILL.end - STILL.stamp) * i) / 50;
+      for (const k of others) expect(sample(TRACKS[k], p), `${k} at ${p}`).toBe(sample(TRACKS[k], STILL.stamp));
+    }
+  });
+
+  it('and nothing moves in the stillness before it either: from the end of the funnel to the stamp', () => {
+    for (let i = 0; i <= 50; i++) {
+      const p = STILL.s + ((STILL.stamp - STILL.s) * i) / 50;
+      for (const k of Object.keys(TRACKS) as (keyof typeof TRACKS)[]) expect(sample(TRACKS[k], p), `${k} at ${p}`).toBe(sample(TRACKS[k], STILL.s));
+    }
+  });
+});
+
 describe('teardownState: invariants', () => {
-  const flat = (l: Layers) => [l.hash.settle, l.slabs.opacity, l.slabs.gap, l.slabs.labels, l.stream.opacity, l.stream.bars, l.stream.total, l.grid.opacity, l.grid.assemble, l.grid.converge, l.model.opacity, l.verdict.opacity, l.verdict.reveal, l.verdict.dock, l.explain.opacity, l.explain.bars, l.map.opacity, l.map.locked];
+  const flat = (l: Layers) => [l.hash.settle, l.slabs.opacity, l.slabs.gap, l.slabs.x, l.slabs.labels, l.pull, l.stream.opacity, l.stream.bars, l.procs.grow, l.procs.opacity, l.grid.opacity, l.grid.assemble, l.grid.converge, l.model.opacity, l.verdict.opacity, l.verdict.reveal, l.verdict.dock, l.explain.open, l.explain.opacity, l.explain.bars, l.map.grow, l.chain.opacity];
 
   it('every value stays within 0..1 for any progress, including garbage', () => {
     for (const p of [-5, -0.001, 0, 0.123, 0.5, 0.999, 1, 1.5, NaN, Infinity, -Infinity])
       flat(teardownState(p)).forEach((v) => { expect(v).toBeGreaterThanOrEqual(0); expect(v).toBeLessThanOrEqual(1); });
   });
 
+  it('the camera stays between 0.62 and 1.1 and only lifts, never drops', () => {
+    for (let i = 0; i <= 1000; i++) { const c = teardownState(i / 1000).cam; expect(c.scale).toBeGreaterThanOrEqual(0.62 - 1e-9); expect(c.scale).toBeLessThanOrEqual(1.1 + 1e-9); expect(c.y).toBeLessThanOrEqual(0); }
+  });
+
   it('is continuous: no value jumps more than a sliver between neighbouring scroll positions', () => {
     let prev = flat(teardownState(0));
-    for (let i = 1; i <= 7000; i++) {
-      const cur = flat(teardownState(i / 7000));
-      cur.forEach((v, j) => expect(Math.abs(v - prev[j]), `value ${j} at ${i / 7000}`).toBeLessThan(0.04)); // the verdict's stamp is the one fast edge on the page
+    for (let i = 1; i <= 8000; i++) {
+      const cur = flat(teardownState(i / 8000));
+      // the verdict stamp is the one deliberately fast edge on the page, so the bound is generous; the rest move far slower
+      cur.forEach((v, j) => expect(Math.abs(v - prev[j]), `value ${j} at ${i / 8000}`).toBeLessThan(0.1));
       prev = cur;
     }
   });
@@ -112,9 +161,9 @@ describe('teardownState: invariants', () => {
     expect(back).toEqual(forward);
   });
 
-  it('the slab gap never closes once opened going forward, and only the stream/grid layers leave', () => {
+  it('the slab gap never closes once opened going forward', () => {
     let gap = 0;
-    for (let i = 0; i <= 700; i++) { const g = teardownState(i / 700).slabs.gap; expect(g).toBeGreaterThanOrEqual(gap); gap = g; }
+    for (let i = 0; i <= 800; i++) { const g = teardownState(i / 800).slabs.gap; expect(g).toBeGreaterThanOrEqual(gap); gap = g; }
   });
 });
 

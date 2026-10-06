@@ -31,9 +31,12 @@ const model = pipeline.find((p) => /forest/i.test(p));
 const indicators = [...(s.top_malware_indicators ?? []), ...(s.top_benign_indicators ?? [])];
 const signed = (n: number) => `${n > 0 ? '+' : ''}${n}`;
 const mitre = (id: string) => `https://attack.mitre.org/techniques/${id.replace('.', '/')}/`;
+// PULL-BACK: the whole investigation chain, one real number per stage (the pipeline names come from maltrace.mdx)
+const top = indicators[0]?.feature ?? '';
+const chain = pipeline.length === 7 ? [`${t.file.sha256.slice(0, 8)}…`, t.process_count !== undefined ? `${t.process_count} processes` : '', t.api_total !== undefined ? fmt(t.api_total) : '', `${claim['maltrace-features']!.display} features`, claim['maltrace-confidence']!.display, top, `${t.attack_ids?.length ?? 0} techniques`] : [];
 const head = (i: number) => `${String(i).padStart(2, '0')} ${STATES[i].name}`;
 ---
-<section class="wrap teardown" aria-labelledby="td-h" data-teardown data-model={model} data-dynamic={claim['maltrace-features-dynamic']?.value} data-static={claim['maltrace-features-static']?.value} data-base={s.shap_base_value}>
+<section class="wrap teardown" aria-labelledby="td-h" data-teardown data-model={model} data-analysis={t.analysis_id} data-procs={t.process_count} data-pipeline={chain.length ? pipeline.join('|') : undefined} data-dynamic={claim['maltrace-features-dynamic']?.value} data-static={claim['maltrace-features-static']?.value} data-base={s.shap_base_value}>
   <h2 id="td-h" class="mono muted">Teardown</h2>
   <div class="td-doc">
     <section class="td-state" aria-labelledby="td-0">
@@ -110,6 +113,17 @@ const head = (i: number) => `${String(i).padStart(2, '0')} ${STATES[i].name}`;
             <tbody>{t.signatures.map((x) => <tr><th scope="row">{x.name}</th><td>{x.severity}</td></tr>)}</tbody>
           </table>
         )}
+      </section>
+    )}
+
+    {chain.length > 0 && (
+      <section class="td-state" aria-labelledby="td-7">
+        <h3 id="td-7" class="mono">{head(7)} <span class="muted">{STATES[7].meaning}</span></h3>
+        <table class="mono">
+          <caption class="muted">The investigation chain, one number per stage.</caption>
+          <thead><tr><th scope="col">Stage</th><th scope="col">Result</th></tr></thead>
+          <tbody>{pipeline.map((s, i) => <tr><th scope="row">{s}</th><td>{chain[i]}</td></tr>)}</tbody>
+        </table>
       </section>
     )}
   </div>
