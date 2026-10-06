@@ -1,11 +1,18 @@
 import { test, expect } from '@playwright/test';
 
+/** Force tier A like the other tests (a 4-core CI runner is tier C and has no stage), without the site's frame counter. */
+const tierA = () => {
+  Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });
+  Object.defineProperty(navigator, 'deviceMemory', { get: () => 8 });
+};
+
 /**
  * Smoothness. Scrolls the stage with real wheel events (steady, then a trackpad-style burst) while recording rAF deltas and
  * long tasks in the page. Any long task over 50 ms fails the test. The p95 frame time is reported, not asserted: CI hardware
  * varies, and the soft target is under 18 ms. (This test installs its own rAF probe, so it does not use the site's frame counter.)
  */
 test('scrolling the teardown has no long task, and reports p95 frame time', async ({ page }, testInfo) => {
+  await page.addInitScript(tierA);
   await page.addInitScript(() => {
     const w = window as any;
     w.__long = [] as number[];
@@ -46,6 +53,7 @@ test('scrolling the teardown has no long task, and reports p95 frame time', asyn
 });
 
 test('the displayed progress lands exactly on the scroll position and then no frame is drawn', async ({ page }) => {
+  await page.addInitScript(tierA);
   await page.addInitScript(() => {
     const w = window as any; w.__f = 0;
     const raf = window.requestAnimationFrame.bind(window);
@@ -63,6 +71,7 @@ test('the displayed progress lands exactly on the scroll position and then no fr
 });
 
 test('a wheel burst glides: progress moves toward the target over several frames, not in one jump', async ({ page }) => {
+  await page.addInitScript(tierA);
   await page.goto('/work/maltrace/');
   await expect(page.locator('.td-stage')).toBeVisible();
   await page.evaluate(() => { const t = document.querySelector('.td-track')!; scrollTo(0, t.getBoundingClientRect().top + scrollY - 56); });
