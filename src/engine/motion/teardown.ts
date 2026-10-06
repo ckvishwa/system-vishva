@@ -1,13 +1,15 @@
 /**
  * MalTrace teardown stage (ADR-0016). Lazy-loaded by components/case/Teardown.astro on tier A/B only.
- * It reads the static document that component rendered (data-td-* attributes), builds an aria-hidden sticky stage from it,
- * and on each scroll or resize maps progress through engine/motion/teardown-state.ts onto the stage: transform, opacity and
- * clip-path only. Input is input/scroll.ts, the frame is the shared scheduler, which sleeps again straight away, so a page
- * that has stopped scrolling renders 0 frames. DOM only: no WebGL, no animation library, no loop of its own.
+ * It reads the static document that component rendered (data-td-* attributes) and builds an aria-hidden sticky stage from it.
+ * Scroll (input/scroll.ts) sets a target progress; a critically damped spring (spring.ts) glides the displayed progress to it
+ * on the shared scheduler, and teardown-state.ts maps that onto the stage: transform, opacity and clip-path only. Geometry
+ * is measured on load and on resize (ResizeObserver, debounced) and cached, so a frame never reads layout. The spring sleeps
+ * once it settles, so a page that has stopped scrolling renders 0 frames. No animation library, no loop of its own.
  * A missing piece of data means that layer is not built.
  */
 import { scheduler } from '../scheduler';
-import { trackScroll, trackViewport } from '../input/scroll';
+import { trackScroll } from '../input/scroll';
+import { springStep, settled, type Spring } from './spring';
 import { teardownState, stageProgress, slabHeights, barLengths, STATES, type Layers } from './teardown-state';
 
 type R = { x: number; y: number; w: number; h: number };
@@ -18,7 +20,7 @@ const ID = 'teardown';
 const num = new Intl.NumberFormat('en-US');
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
-const tr = (e: HTMLElement, x: number, y: number, s = 1) => { e.style.transform = `translate(${x}px,${y}px)${s === 1 ? '' : ` scale(${s})`}`; };
+const tr = (e: HTMLElement, x: number, y: number, s = 1) => { e.style.transform = `translate3d(${x}px,${y}px,0)${s === 1 ? '' : ` scale(${s})`}`; };
 const box = (e: HTMLElement, w: number, h?: number) => { e.style.width = `${w}px`; if (h !== undefined) e.style.height = `${h}px`; };
 const el = (tag: string, cls: string, text?: string, parent?: Element) => {
   const e = document.createElement(tag);
@@ -91,7 +93,7 @@ export function initTeardown(root: HTMLElement): () => void {
     const counts = barLengths(apis.map((a) => a.count));
     const totalEl = total !== null ? el('p', 'td-total mono', '', g) : null;
     const rows = apis.map((a) => ({ name: el('p', 'td-api mono', `${a.name} ${num.format(a.count)}`, g), bar: el('i', 'td-bar', undefined, g) }));
-    let rh = 0;
+    let rh = 0, shownTotal = -1;
     layers.push({
       place(geo) {
         const r = geo.side;
@@ -101,10 +103,10 @@ export function initTeardown(root: HTMLElement): () => void {
       },
       apply(l) {
         g.style.opacity = String(l.stream.opacity);
-        if (totalEl) totalEl.textContent = `${num.format(Math.round(total! * l.stream.total))} API calls`;
+        if (totalEl) { const n = Math.round(total! * l.stream.total); if (n !== shownTotal) { shownTotal = n; totalEl.textContent = `${num.format(n)} API calls`; } } // only when the integer changes
         rows.forEach((o, i) => {
           const s = clamp(l.stream.bars * 1.5 - i / (rows.length * 2)) * counts[i];
-          o.bar.style.transform = `translate(${rootRect.side.x}px,${rootRect.side.y + 36 + i * rh + Math.min(16, rh - 4)}px) scaleX(${s})`;
+          o.bar.style.transform = `translate3d(${rootRect.side.x}px,${rootRect.side.y + 36 + i * rh + Math.min(16, rh - 4)}px,0) scaleX(${s})`;
         });
       },
     });
@@ -187,7 +189,7 @@ export function initTeardown(root: HTMLElement): () => void {
         rows.forEach((o, i) => {
           const s = len[i] * l.explain.bars, left = o.s.v < 0;
           o.bar.style.transformOrigin = left ? 'right center' : 'left center';
-          o.bar.style.transform = `translate(${left ? ax - half : ax}px,${y0 + i * rh + off}px) scaleX(${s})`;
+          o.bar.style.transform = `translate3d(${left ? ax - half : ax}px,${y0 + i * rh + off}px,0) scaleX(${s})`;
         });
       },
     });
@@ -210,9 +212,10 @@ export function initTeardown(root: HTMLElement): () => void {
     });
   }
 
-  // ---- geometry
+  // ---- geometry: measured on load and on resize, then cached. A frame never reads layout.
   const rootRect = { side: { x: 0, y: 0, w: 0, h: 0 } };
-  let geo: Geo, last: Layers = teardownState(0), shown = -1;
+  let geo: Geo, shown = -1;
+  let trackTop = 0, trackH = 0, vh = 0;
   const measure = () => {
     const W = stage.clientWidth, H = stage.clientHeight, mobile = W < 720, pad = mobile ? 16 : 24;
     const full = { x: pad, w: W - pad * 2 };
@@ -227,23 +230,50 @@ export function initTeardown(root: HTMLElement): () => void {
     if (hash) { box(hash, W - pad * 2); tr(hash, pad, H - 48); }
     tr(headEl, pad, pad);
     layers.forEach((l) => l.place(geo));
+    const r = track.getBoundingClientRect();
+    trackTop = r.top + scrollY;
+    trackH = r.height;
+    vh = innerHeight;
   };
 
+  // ---- progress: scroll sets the target, a critically damped spring glides what is shown to it
+  let target = 0, drawn = -1;
+  let cur: Spring = { x: 0, v: 0 };
+  const draw = (p: number) => {
+    if (p === drawn) return;
+    drawn = p;
+    stage.dataset.p = String(Math.round(p * 10000) / 10000); // progress as drawn: tests wait for the glide to land on it
+    const l = teardownState(p);
+    if (l.index !== shown) { shown = l.index; headEl.textContent = `${String(shown).padStart(2, '0')} ${STATES[shown].name} · ${STATES[shown].meaning}`; }
+    if (hash) { const s = l.hash.settle; hash.style.opacity = String(s); hash.style.clipPath = `inset(0 ${(1 - s) * 100}% 0 0)`; }
+    layers.forEach((x) => x.apply(l));
+  };
+  const retarget = (y: number) => { target = stageProgress(trackTop - y, trackH, vh); };
+
   const sched = scheduler();
-  sched.add(ID, () => {
-    const r = track.getBoundingClientRect();
-    last = teardownState(stageProgress(r.top, r.height, innerHeight));
-    if (last.index !== shown) { shown = last.index; headEl.textContent = `${String(shown).padStart(2, '0')} ${STATES[shown].name} · ${STATES[shown].meaning}`; }
-    if (hash) { const s = last.hash.settle; hash.style.opacity = String(s); hash.style.clipPath = `inset(0 ${(1 - s) * 100}% 0 0)`; }
-    layers.forEach((l) => l.apply(last));
-    return false; // drawn once; sleep until the next scroll or resize
+  sched.add(ID, (dt) => {
+    cur = springStep(cur, target, dt / 1000);
+    const done = settled(cur, target);
+    if (done) cur = { x: target, v: 0 };
+    draw(cur.x);
+    return !done; // keep running only while the glide is still moving; then sleep
   });
 
   root.querySelector('h2')!.after(track);
   root.classList.add('is-live');
   measure();
-  const wake = () => sched.invalidate(ID);
-  const offs = [trackScroll(wake), trackViewport(() => { measure(); wake(); })];
-  wake();
-  return () => { offs.forEach((f) => f()); sched.remove(ID); track.remove(); root.classList.remove('is-live'); };
+  retarget(scrollY);
+  cur = { x: target, v: 0 };
+
+  // will-change only while the stage is on screen
+  const io = new IntersectionObserver(([e]) => stage.classList.toggle('is-hot', e.isIntersecting));
+  io.observe(track);
+
+  let timer = 0;
+  const ro = new ResizeObserver(() => { clearTimeout(timer); timer = window.setTimeout(() => { measure(); retarget(scrollY); drawn = -1; sched.invalidate(ID); }, 120); });
+  ro.observe(stage);
+  ro.observe(document.body); // content above the stage changing height moves the track
+
+  const off = trackScroll((y) => { retarget(y); sched.invalidate(ID); });
+  return () => { off(); ro.disconnect(); io.disconnect(); clearTimeout(timer); sched.remove(ID); track.remove(); root.classList.remove('is-live'); };
 }

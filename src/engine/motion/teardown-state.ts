@@ -3,10 +3,11 @@
  * as pure functions of progress (0..1 through the sticky stage). Nothing here touches the DOM or the clock, so every state
  * boundary is unit-tested. engine/motion/teardown.ts applies these numbers to the stage as transform, opacity and clip-path.
  *
- * Seven states, each owning one seventh of the scroll. A layer's value is a clamped segment of progress, so scrolling back
- * reassembles exactly what scrolling forward peeled off.
+ * Seven states over one scroll. Every layer's value is a keyframe track over progress, so scrolling back reassembles exactly
+ * what scrolling forward peeled off.
  */
 import type { MotionIntent } from './tokens';
+import { sample, type Key } from './keyframes';
 
 export const STATE_COUNT = 7;
 export interface StateInfo { name: string; meaning: MotionIntent }
@@ -21,9 +22,38 @@ export const STATES: readonly StateInfo[] = [
 ];
 
 const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
-/** 0 before `a`, 1 after `b`, linear between. A seventh is one state; `u` converts "state k + fraction" to progress. */
-const seg = (p: number, a: number, b: number) => clamp01((p - a) / (b - a));
-const u = (k: number) => k / STATE_COUNT;
+
+/**
+ * The timeline. State k's entrance is a window T(k) centred on the boundary k/7, one state plus 15% long, so neighbouring
+ * windows overlap by 15% of a state: the next thing starts before the last has finished, nothing waits. Each layer's value
+ * is a track of keyframes (keyframes.ts) over the one global progress, ease-in-out cubic unless noted. The last window ends
+ * a little before 1, leaving a short rest on the finished map.
+ */
+export const W = 1 / STATE_COUNT;
+export const OVERLAP = 0.15 * W;
+export const T = (k: number) => ({ s: Math.max(0, k * W - W / 2 - OVERLAP / 2), e: Math.min(1, k * W + W / 2 + OVERLAP / 2) });
+const [T1, T2, T3, T4, T5, T6] = [1, 2, 3, 4, 5, 6].map(T);
+
+export const TRACKS = {
+  hashSettle: [[0, 0], [0.5 * W, 1, 'out']],
+  slabsOpacity: [[T3.s, 1], [3.25 * W, 0]],
+  // CRACK opens the block a quarter of the way, DETONATE pulls it fully apart
+  slabsGap: [[T1.s, 0], [T1.e, 0.25], [T2.e, 1]],
+  slabsLabels: [[T1.s, 0], [T1.e, 1]],
+  streamOpacity: [[T2.s, 0], [T2.s + 0.35 * W, 1], [T3.s, 1], [T3.s + 0.4 * W, 0]],
+  streamBars: [[T2.s, 0], [T2.e, 1]],
+  gridOpacity: [[T3.s, 0], [T3.s + 0.25 * W, 1], [T4.e - 0.25 * W, 1], [T4.e, 0]],
+  gridAssemble: [[T3.s, 0], [T3.e, 1]],
+  gridConverge: [[T4.s, 0], [T4.e, 1]],
+  modelOpacity: [[T4.s, 0], [T4.s + 0.3 * W, 1], [T5.s, 1], [T5.s + 0.5 * W, 0]],
+  verdictOpacity: [[T4.e - 0.35 * W, 0], [T4.e - 0.25 * W, 1]],
+  verdictReveal: [[T4.e - 0.35 * W, 0], [T4.e, 1]],
+  verdictDock: [[T5.s, 0], [T5.e, 1]],
+  explainOpacity: [[T5.s, 0], [T5.s + 0.3 * W, 1], [T6.s, 1], [T6.s + 0.4 * W, 0]],
+  explainBars: [[T5.s, 0], [T5.e, 1]],
+  mapOpacity: [[T6.s, 0], [T6.s + 0.3 * W, 1]],
+  mapLocked: [[T6.s, 0], [1, 1, 'linear']],
+} as const satisfies Record<string, readonly Key[]>;
 
 export interface Layers {
   /** 0..6, the state the scroll is in */
@@ -43,19 +73,18 @@ export interface Layers {
 export function teardownState(progress: number): Layers {
   const p = Number.isFinite(progress) ? clamp01(progress) : 0;
   const index = Math.min(STATE_COUNT - 1, Math.floor(p * STATE_COUNT));
-  const fade = (inA: number, inB: number, outA: number, outB: number) => seg(p, inA, inB) * (1 - seg(p, outA, outB));
+  const v = (k: keyof typeof TRACKS) => sample(TRACKS[k], p);
   return {
     index,
     local: clamp01(p * STATE_COUNT - index),
-    hash: { settle: seg(p, 0, u(0.5)) },
-    // CRACK opens the block a quarter of the way, DETONATE pulls it fully apart
-    slabs: { opacity: 1 - seg(p, u(3), u(3.5)), gap: 0.25 * seg(p, u(1), u(2)) + 0.75 * seg(p, u(2), u(3)), labels: seg(p, u(1), u(1.5)) },
-    stream: { opacity: fade(u(2), u(2.3), u(3), u(3.4)), bars: seg(p, u(2), u(3)), total: seg(p, u(2), u(3)) },
-    grid: { opacity: fade(u(3), u(3.3), u(4.6), u(4.9)), assemble: seg(p, u(3), u(4)), converge: seg(p, u(4), u(4.75)) },
-    model: { opacity: fade(u(4), u(4.4), u(5), u(5.4)) },
-    verdict: { opacity: seg(p, u(4.5), u(4.6)), reveal: seg(p, u(4.5), u(5)), dock: seg(p, u(5), u(5.5)) },
-    explain: { opacity: fade(u(5), u(5.4), u(6), u(6.2)), bars: seg(p, u(5), u(6)) },
-    map: { opacity: seg(p, u(6), u(6.3)), locked: seg(p, u(6), 1) },
+    hash: { settle: v('hashSettle') },
+    slabs: { opacity: v('slabsOpacity'), gap: v('slabsGap'), labels: v('slabsLabels') },
+    stream: { opacity: v('streamOpacity'), bars: v('streamBars'), total: v('streamBars') },
+    grid: { opacity: v('gridOpacity'), assemble: v('gridAssemble'), converge: v('gridConverge') },
+    model: { opacity: v('modelOpacity') },
+    verdict: { opacity: v('verdictOpacity'), reveal: v('verdictReveal'), dock: v('verdictDock') },
+    explain: { opacity: v('explainOpacity'), bars: v('explainBars') },
+    map: { opacity: v('mapOpacity'), locked: v('mapLocked') },
   };
 }
 

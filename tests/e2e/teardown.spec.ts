@@ -10,7 +10,9 @@ async function goto(page: Page, p: number) {
     const top = t.getBoundingClientRect().top + scrollY;
     scrollTo(0, top + p * (t.clientHeight - innerHeight));
   }, p);
-  await page.waitForTimeout(150);
+  // the displayed progress glides to the scroll position on a spring: wait until it has landed
+  await page.waitForFunction((p) => Math.abs(+(document.querySelector('.td-stage') as HTMLElement).dataset.p! - p) < 0.003, p, { timeout: 5000 });
+  await page.waitForTimeout(60);
 }
 
 test('every one of the 7 states is reachable by scrolling, and scrolling back reassembles', async ({ page }) => {
