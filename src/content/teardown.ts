@@ -43,8 +43,8 @@ export const shapSchema = z.object({
 });
 export type Shap = z.infer<typeof shapSchema>;
 
-/** What the owner verified by hand. The files must agree with these, and with the ledger. */
-export const EXPECT = { analysisId: 15, sampleName: 'wannacry.exe', shapConfidence: 95.0 } as const;
+/** What the owner verified by hand about the sample. The confidence is deliberately NOT here: the ledger is its only source. */
+export const EXPECT = { analysisId: 15, sampleName: 'wannacry.exe' } as const;
 
 export interface CheckInput {
   teardown: Teardown;
@@ -53,12 +53,14 @@ export interface CheckInput {
   sample?: { file: string; sha256: string; sha1: string; md5: string; sizeBytes: number };
   /** claims.yaml values by id */
   claims: Record<string, number | undefined>;
+  /** claims.yaml `display` of maltrace-confidence: the one string the verdict shows */
+  confidenceDisplay?: string;
   /** maltrace-features.json `static`: the eight static PE feature names the README lists */
   staticFeatures?: string[];
 }
 
 /** Every disagreement, as a readable line. Empty means the teardown may ship. */
-export function teardownProblems({ teardown: t, shap: s, sample, claims, staticFeatures }: CheckInput): string[] {
+export function teardownProblems({ teardown: t, shap: s, sample, claims, staticFeatures, confidenceDisplay }: CheckInput): string[] {
   const p: string[] = [];
   if (t.analysis_id !== EXPECT.analysisId) p.push(`analysis_id is ${t.analysis_id}, expected ${EXPECT.analysisId}`);
 
@@ -82,9 +84,12 @@ export function teardownProblems({ teardown: t, shap: s, sample, claims, staticF
   }
 
   if (s.sample !== EXPECT.sampleName) p.push(`SHAP sample is ${s.sample}, expected ${EXPECT.sampleName}`);
-  if (s.confidence !== EXPECT.shapConfidence) p.push(`SHAP confidence is ${s.confidence}, expected ${EXPECT.shapConfidence}`);
+  // One prediction, one number: the verdict shown on the page is the ledger's maltrace-confidence, and the SHAP bars it
+  // explains come from the same artifact, so the claim, its display and the SHAP file must all say the same thing.
   const confClaim = claims['maltrace-confidence'];
-  if (confClaim !== undefined && confClaim !== s.confidence) p.push(`SHAP confidence ${s.confidence} != claim maltrace-confidence ${confClaim}`);
+  if (confClaim === undefined) p.push('claim maltrace-confidence is missing');
+  else if (confClaim !== s.confidence) p.push(`SHAP confidence ${s.confidence} != claim maltrace-confidence ${confClaim}`);
+  if (confidenceDisplay !== undefined && confidenceDisplay !== `${s.confidence}%`) p.push(`claim display "${confidenceDisplay}" != SHAP confidence ${s.confidence}%`);
   if (s.malware_probability !== undefined && s.malware_probability !== s.confidence) p.push(`SHAP malware_probability ${s.malware_probability} != confidence ${s.confidence}`);
   if (t.file.name !== s.sample) p.push(`teardown file ${t.file.name} != SHAP sample ${s.sample}`);
 

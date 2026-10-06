@@ -19,8 +19,9 @@ if (!s.success) problems.push(`shap_wannacry_exe.json is malformed: ${s.error.is
 if (t.success && s.success) {
   const mdx = readFileSync('src/content/work/maltrace.mdx', 'utf8').match(/^---\r?\n([\s\S]*?)\r?\n---/);
   const fm = mdx ? (parse(mdx[1]) as { sample?: any }) : {};
-  const claims = Object.fromEntries((parse(readFileSync('src/content/claims/claims.yaml', 'utf8')) as { id: string; value: number }[]).map((c) => [c.id, c.value]));
-  problems.push(...teardownProblems({ teardown: t.data, shap: s.data, sample: fm.sample, claims, staticFeatures: json('maltrace-features.json').static }));
+  const ledger = parse(readFileSync('src/content/claims/claims.yaml', 'utf8')) as { id: string; value: number; display: string }[];
+  const claims = Object.fromEntries(ledger.map((c) => [c.id, c.value]));
+  problems.push(...teardownProblems({ teardown: t.data, shap: s.data, sample: fm.sample, claims, staticFeatures: json('maltrace-features.json').static, confidenceDisplay: ledger.find((c) => c.id === 'maltrace-confidence')?.display }));
 }
 
 if (problems.length) {

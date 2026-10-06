@@ -22,7 +22,7 @@ const s = shapSchema.parse(shapRaw);
 const sample = (parse(mdxRaw.match(/^---\r?\n([\s\S]*?)\r?\n---/)![1]) as { sample?: any }).sample;
 const ids = ['maltrace-api-calls', 'maltrace-confidence', 'maltrace-features', 'maltrace-features-dynamic', 'maltrace-features-static'];
 const claim = Object.fromEntries(await Promise.all(ids.map(async (id) => [id, (await getEntry('claims', id))?.data])));
-const problems = teardownProblems({ teardown: t, shap: s, sample, claims: Object.fromEntries(ids.map((id) => [id, claim[id]?.value])), staticFeatures: featuresRaw.static });
+const problems = teardownProblems({ teardown: t, shap: s, sample, claims: Object.fromEntries(ids.map((id) => [id, claim[id]?.value])), staticFeatures: featuresRaw.static, confidenceDisplay: claim['maltrace-confidence']?.display });
 if (problems.length) throw new Error(`MalTrace teardown inputs are inconsistent:\n  ${problems.join('\n  ')}`);
 
 const fmt = (n: number) => n.toLocaleString('en-US');

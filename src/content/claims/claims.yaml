@@ -56,7 +56,7 @@
   project: maltrace
   evidence: "https://github.com/ckvishwa/Maltrace/blob/12a46508d789a273fe05b133bbd0eed94071489b/docs/images/shap_wannacry_exe.json#L4"
   evidenceKind: public
-  evidenceNote: "95% malicious confidence on this sample (wannacry.exe): the committed SHAP output records confidence 95.0. One sample's prediction, not model accuracy, F1, recall, or dataset-level performance."
+  evidenceNote: "95% malicious confidence on this sample (wannacry.exe): the committed SHAP artifact (docs/images/shap_wannacry_exe.json, written by ml/shap_explain.py as round(max(probability) * 100, 1)) records confidence 95.0, the same run whose per-feature contributions the teardown explains. One sample's prediction, not model accuracy, F1, recall, or dataset-level performance."
   measuredOn: "2026-06-08"
 
 - id: maltrace-features-dynamic
