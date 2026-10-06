@@ -34,7 +34,14 @@ const work = defineCollection({
       proposal: z.array(z.number().int().min(1)).default([]),
     })).optional(),
     signature: z.enum(['waveform', 'hash', 'stream', 'stamp']), // ARD §7 idea 4
-    sampleHash: z.string().regex(/^[a-fA-F0-9]{64}$/).optional(), // real SHA-256 of the analysed sample; powers the "hash" signature
+    // The analysed sample, as recorded by the sandbox report. sample.sha256 powers the "hash" transition; none of it is typed in by hand elsewhere.
+    sample: z.object({
+      file: z.string(),
+      sha256: z.string().regex(/^[a-fA-F0-9]{64}$/),
+      sha1: z.string().regex(/^[a-fA-F0-9]{40}$/),
+      md5: z.string().regex(/^[a-fA-F0-9]{32}$/),
+      sizeBytes: z.number().int().positive(),
+    }).optional(),
     demo: z.enum(['release-gate']).optional(), // an interactive island shown under the story
     repo: z.url().optional(),
     draft: z.boolean().default(false),

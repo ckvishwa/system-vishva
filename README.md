@@ -93,12 +93,10 @@ The full architecture record is [docs/ARD.md](docs/ARD.md); scroll storyboards a
 - [x] Phase 2: proof layer (MalTrace hash transition, evidence drawer, QualityMesh release-gate demo, OG images)
 - [ ] Evidence for every claim: public link, self-hosted file or declared on-request (the gate blocks on unverified)
 - [ ] Re-capture full Rexi suite and switch rexi-tests to self-hosted
-- [ ] Fill `measuredOn` for the MalTrace claims; fix the MalTrace README prose that says 95% (its output says 94.2%)
+- [ ] MalTrace README: its CLI example block (lines 250-251 and 281-282) shows 94.2% while the prose and the committed SHAP JSON say 95%; make the example match
 - [ ] Real domain: set `SITE_URL` (or connect Vercel, which provides `VERCEL_PROJECT_PRODUCTION_URL`); until then canonical and OG URLs are left out
-- [ ] LinkedIn URL for `contact.astro` (the line is hidden until it exists)
 - [ ] About page: your two paragraphs on how you think about AI systems, security and reliability (nothing is shown until they exist)
 - [ ] Rexi beat 5 captures (`src/content/work/rexi/README.md`); the section is hidden until `captures.yaml` exists
-- [ ] MalTrace `sampleHash` (the analysed sample's real SHA-256, in `src/content/work/maltrace.mdx`): until it is set, the hash transition stays off and navigation is plain
 - [ ] Real `lastTouched` dates for the two lab entries (the TODO comments in `src/content/lab/*.md`)
 - [ ] Hand tests on a real Android phone and iPhone
 - [ ] On first Vercel deploy, open /logs and confirm real commits show

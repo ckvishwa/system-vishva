@@ -16,8 +16,21 @@ const claims = d.claimIds.length ? await getEntries(d.claimIds.map((id: string) 
       <p class="mono muted" data-scroll-depth="0.5">{d.category}</p>
       <h1 class="display" data-fx="decrypt" data-vt={`title-${entry.id}`} data-sig-title>{d.title}</h1>
       <p class="h2 thesis" data-fx="redact">{d.thesis}</p>
-      {d.sampleHash && <p class="mono muted" data-sig-hash-target>sample sha-256 {hashLabel(d.sampleHash)}</p>}
+      {d.sample && <p class="mono muted" data-sig-hash-target>sample sha-256 {hashLabel(d.sample.sha256)}</p>}
     </header>
+
+    {d.sample && (
+      <section class="wrap sample" aria-labelledby="sample-h">
+        <h2 id="sample-h" class="mono muted">Analysed sample</h2>
+        <dl class="mono">
+          <div><dt class="muted">file</dt><dd>{d.sample.file}</dd></div>
+          <div><dt class="muted">size</dt><dd>{d.sample.sizeBytes.toLocaleString('en-US')} bytes</dd></div>
+          <div><dt class="muted">sha256</dt><dd>{d.sample.sha256}</dd></div>
+          <div><dt class="muted">sha1</dt><dd>{d.sample.sha1}</dd></div>
+          <div><dt class="muted">md5</dt><dd>{d.sample.md5}</dd></div>
+        </dl>
+      </section>
+    )}
 
     <ScrollStory id={entry.id} pipeline={d.pipeline} story={d.story} claims={claims}>
       <slot />
@@ -34,4 +47,9 @@ const claims = d.claimIds.length ? await getEntries(d.claimIds.map((id: string) 
   .case-head { width: 60%; max-width: none; margin-inline: 0; padding-block: var(--s-9) var(--s-7); display: grid; gap: var(--s-4); }
   @media (max-width: 720px) { .case-head { width: 100%; } }
   .thesis { max-width: 22ch; color: var(--c-muted); }
+  /* One ruled block: a 4px rule opens it, 1px rules between rows (ADR-0013). */
+  .sample { display: grid; gap: var(--s-3); padding-block: var(--s-6); }
+  .sample dl { margin: 0; border-top: 4px solid var(--c-text); font-size: var(--t-xs); }
+  .sample dl div { display: grid; grid-template-columns: 5rem 1fr; gap: var(--s-3); padding-block: var(--s-2); border-bottom: 1px solid var(--c-rule); }
+  .sample dt, .sample dd { margin: 0; overflow-wrap: anywhere; }
 </style>

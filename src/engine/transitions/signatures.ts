@@ -67,7 +67,7 @@ const waveform: Signature = {
 };
 
 /**
- * MalTrace: the sample's SHA-256 (from the case study's `sampleHash`, never made up) forms over the record and
+ * MalTrace: the sample's SHA-256 (from the case study's `sample.sha256`, never made up) forms over the record and
  * settles into the same line under the case-study title. Opacity only, once, inside the same 460 ms budget.
  */
 const hash: Signature = {

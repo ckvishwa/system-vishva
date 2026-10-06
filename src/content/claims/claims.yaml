@@ -37,6 +37,7 @@
   evidence: "https://github.com/ckvishwa/Maltrace/blob/12a46508d789a273fe05b133bbd0eed94071489b/README.md#L248-L257"
   evidenceKind: public
   evidenceNote: "API-call count observed for the documented WannaCry sandbox sample, not an aggregate dataset metric."
+  measuredOn: "2026-06-08"
 
 - id: maltrace-features
   label: Behavioral + PE features
@@ -46,12 +47,14 @@
   evidence: "https://github.com/ckvishwa/Maltrace/blob/12a46508d789a273fe05b133bbd0eed94071489b/README.md#L181-L218"
   evidenceKind: public
   evidenceNote: "54 engineered features total: 46 dynamic behavioral features plus 8 static PE features."
+  measuredOn: "2026-06-08"
 
 - id: maltrace-confidence
-  label: Malicious confidence, WannaCry sample
-  value: 94.2
-  display: "94.2%"
+  label: Malicious confidence on this sample
+  value: 95
+  display: "95%"
   project: maltrace
-  evidence: "https://github.com/ckvishwa/Maltrace/blob/12a46508d789a273fe05b133bbd0eed94071489b/README.md#L248-L257"
+  evidence: "https://github.com/ckvishwa/Maltrace/blob/12a46508d789a273fe05b133bbd0eed94071489b/docs/images/shap_wannacry_exe.json#L4"
   evidenceKind: public
-  evidenceNote: "Single WannaCry sample prediction confidence from the program output. Not model accuracy, F1, recall, or dataset-level performance."
+  evidenceNote: "95% malicious confidence on this sample (wannacry.exe): the committed SHAP output records confidence 95.0. One sample's prediction, not model accuracy, F1, recall, or dataset-level performance."
+  measuredOn: "2026-06-08"

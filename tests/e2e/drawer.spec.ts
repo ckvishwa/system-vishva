@@ -66,3 +66,18 @@ test('drawer works the same under reduced motion', async ({ browser }) => {
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await ctx.close();
 });
+
+test('MalTrace shows the recorded sample, and its record carries the hash that drives the transition', async ({ page }) => {
+  const sha = 'ed01ebfbc9eb5bbea545af4d01bf5f1071661840480439c6e5babe8e080e41aa';
+  await page.goto('/work/');
+  await expect(page.locator('a.record[data-sig="hash"]')).toHaveAttribute('data-sig-hash', sha);
+  await page.goto('/work/maltrace/');
+  await expect(page.locator('[data-sig-hash-target]')).toContainText('ed01ebfb…080e41aa');
+  const sample = page.getByRole('region', { name: 'Analysed sample' });
+  await expect(sample).toContainText(sha);
+  await expect(sample).toContainText('3,514,368 bytes');
+  // the confidence is labelled as one sample's prediction, never as model accuracy
+  const cell = page.locator('[data-claim][data-label="Malicious confidence on this sample"]');
+  await expect(cell).toContainText('95%');
+  await expect(cell).toHaveAttribute('data-note', /not model accuracy/);
+});

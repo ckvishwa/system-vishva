@@ -36,10 +36,10 @@ test('no page shows TODO or placeholder text', async ({ page }) => {
   }
 });
 
-test('/about is a structured fact block from profile.yaml and /contact has no LinkedIn line', async ({ page }) => {
+test('/about is a structured fact block from profile.yaml and /contact lists email, GitHub and LinkedIn', async ({ page }) => {
   await page.goto('/about/');
   await expect(page.locator('dl.facts dt')).toHaveText(['Education', 'Education', 'Certification', 'Experience', 'Location', 'Seeking']);
   await page.goto('/contact/');
   await expect(page.getByRole('link', { name: /ckvishwateja@gmail.com/ })).toBeVisible();
-  await expect(page.getByText(/linkedin/i)).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /LinkedIn/ })).toHaveAttribute('href', 'https://linkedin.com/in/vishvack');
 });
