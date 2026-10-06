@@ -22,7 +22,8 @@ export const teardownSchema = z.object({
     md5: hex(32).optional(),
     type: z.string().optional(),
   }),
-  sections: z.array(z.object({ name: z.string().min(1), size: hexSize, virtual_size: hexSize.optional(), entropy: decimal })).min(1).optional(),
+  // raw_offset and virtual_address are optional: the CAPE extract does not carry them yet, and nothing is derived in their place
+  sections: z.array(z.object({ name: z.string().min(1), size: hexSize, virtual_size: hexSize.optional(), raw_offset: hexSize.optional(), virtual_address: hexSize.optional(), entropy: decimal })).min(1).optional(),
   api_total: z.number().int().nonnegative().optional(),
   api_top: z.array(z.object({ api: z.string().min(1), count: z.number().int().nonnegative() })).min(1).optional(),
   process_count: z.number().int().nonnegative().optional(),

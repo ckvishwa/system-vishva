@@ -1,10 +1,14 @@
 /**
  * The API stream (ADR-0016 amendment): the one scoped exception to "DOM only". A single 2D canvas (not WebGL) draws at most
  * 600 points that carry meaning: each API's share of the points is proportional to its real call count, so the density of the
- * stream is the volume of the calls. In DISTILL the points are vacuumed into the 54-cell matrix, then funnelled into the model.
+ * stream is the volume of the calls. The points fly along the camera axis, through the gaps of the exploded stack; a point's
+ * horizontal column is its API, its gap is just its index, so no API is tied to any PE section. In DISTILL the points are
+ * vacuumed into the 54-cell matrix, then funnelled into the model.
  * Positions are a pure function of progress (nothing is timed), drawn on the shared scheduler, which sleeps when the scroll
  * stops. These are the pure parts; teardown.ts owns the canvas.
  */
+import { project } from './explode';
+
 export const MAX_POINTS = 600;
 
 /** Split `n` points across lanes in proportion to `counts` (largest remainder), so the shares sum to exactly n. */
@@ -25,10 +29,17 @@ export const phase = (j: number) => frac(j * 0.6180339887);
 export const scatter = (j: number) => frac(j * 0.7548776662) - 0.5;
 
 export type Pt = readonly [x: number, y: number];
-export interface Lane { y: number; x0: number; x1: number; h: number }
+export interface Flight { x0: number; x1: number; gaps: number[]; o: { x: number; y: number }; zr: number; lanes: number }
 
-/** Point j in its lane: it travels from x0 to x1 and wraps, `flow` laps in total over the whole scroll. */
-export const lanePos = (j: number, lane: Lane, flow: number): Pt => [lane.x0 + frac(phase(j) + flow) * (lane.x1 - lane.x0), lane.y + scatter(j) * lane.h];
+/**
+ * Point j of API lane k. Its column across the stack's width is its lane, its gap is j round-robin, and its depth runs from far
+ * to near (`flow` laps over the whole scroll), so it travels along the camera axis. Returns the screen point and its scale.
+ */
+export function flightPos(j: number, lane: number, f: Flight, flow: number): { x: number; y: number; s: number } {
+  const z = (frac(phase(j) + flow) * 2 - 1) * f.zr;
+  const col = f.lanes > 1 ? lane / (f.lanes - 1) : 0.5;
+  return project({ x: f.x0 + (col + scatter(j) * 0.05) * (f.x1 - f.x0), y: f.gaps[j % f.gaps.length], z }, f.o);
+}
 
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 /** Stream -> matrix cell (vac 0..1) -> model node (conv 0..1). */

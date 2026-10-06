@@ -39,9 +39,16 @@ jobs:
       - run: npm ci
       - uses: actions/download-artifact@v4
         with: { name: site-dist, path: dist }
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - name: E2E (reduced motion, nav, idle frames, context leaks, terminal, status, headers enforced)
         run: npm run test:e2e
+      # The Chromium and WebKit screenshots of X-RAY, EXPLODE and DETONATE at 1280 and 390, for review.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: teardown-shots
+          path: test-results/teardown-shots
+          if-no-files-found: ignore
 
   lighthouse:
     needs: gate

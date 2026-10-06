@@ -20,7 +20,7 @@ Rexi and QualityMesh can reuse it.
 4. **No new loop.** The stage subscribes to `input/scroll.ts` and the shared scheduler. Scroll sets a target; a critically damped
    spring (`spring.ts`, solved exactly, no overshoot from rest) glides the displayed progress to it, and sleeps when settled, so an
    idle page renders 0 frames. Geometry is measured on load and on resize and cached; a frame never reads layout. It animates
-   transform, opacity and clip-path only, never WebGL. The lazy chunk has its own size-limit entry (6 KB gz for MalTrace).
+   transform, opacity and clip-path only, never WebGL. The lazy chunk has its own size-limit entry (see the budget exception below).
 
 To reuse it, write the artifacts and a schema, a layer list and state table, then a stage builder that maps layers onto the same
 `Layers` shape; keep the static document as the source the stage reads.
@@ -46,7 +46,44 @@ raising it.
   display and the SHAP artifact's confidence agree.
 - **No tactic grouping** of the ATT&CK nodes: several of these techniques belong to more than one tactic, so the nodes are a plain
   ordered grid.
-- **Budget:** the teardown chunk limit is 6 KB gzipped (was 5), for the spring, the keyframes and the canvas. Pre-LCP stays under 20 KB.
+- **Budget:** the teardown chunk limit became 6 KB gzipped (was 5), for the spring, the keyframes and the canvas. It is raised again below. Pre-LCP stays under 20 KB.
+
+## Amendment 2026-10-07: the CAD exploded view, and a budget exception
+The visual and narrative model was replaced with a CAD-style exploded view and nine states (SEALED, X-RAY, EXPLODE, DETONATE,
+DISTILL, DECIDE, VERDICT, EXPLAIN, MAP; the old PULL-BACK is the final portion of MAP). The spring, the scheduler, the keyframe
+interpolator, the stream canvas, gyro and the evidence gates are unchanged.
+
+- **CSS 3D, once.** `perspective` is on `.td-world` (the stage's world, the parent of the slab group) and `preserve-3d` only on the
+  slab group; slabs are `backface-visibility: hidden`. Each slab's transform comes from its index and one explode amount
+  (`explode.ts`): even left/forward, odd right/back, tilt at most 12 degrees, never keyed on a section name.
+- **Flat annotations over 3D slabs.** Callouts, leader lines and the alignment rail are 2D. Their anchors are the slabs' 3D points
+  projected through the same perspective the browser uses (`slabPoint`, `project`), unit-tested against a hand-computed CSS transform.
+- **The stream passes through the gaps** along the camera axis. A point's column is its API and its gap is its index, so nothing
+  implies an API belongs to a PE section.
+- **X-RAY does not claim positions the data lacks.** Raw offsets and virtual addresses are not in the CAPE extract; the schema
+  fields are optional, the dependent annotations hide, and the bands are equal. With real offsets for every section the bands sit
+  at offset / file size. Offsets are never computed from cumulative sizes.
+- **VERDICT is absolute stillness** for the whole state, the one deliberate exception to the 15% overlap rule.
+- **A state moves during its own span** (its window is the state widened by half the overlap), so EXPLODE does not start lifting
+  inside X-RAY.
+
+### Budget exception: teardown chunk 6,000 B to 6,800 B gzipped
+| | |
+| --- | --- |
+| Previous limit | 6,000 B (size-limit, gzipped) |
+| New limit | **6,800 B** |
+| Measured size | 6,473 B (the previous implementation measured 5,985 B) |
+| Delta | +488 B, +8.2% |
+
+Why the extra bytes are justified: they buy the exploded-view geometry (slab transforms, projection, annotation anchors, the band
+layout that uses real offsets when they exist), the annotation overlay with leader lines and the rail, the stream through the
+gaps, and the two extra states with the stillness. That is the signature visual of the MalTrace case study. The chunk is lazy
+(fetched only on the MalTrace case study, never under reduced motion or tier C) and does not count toward the pre-LCP budget, which
+stays under 20 KB. Before asking for room the code was deduplicated: the stage reads one payload built by `Teardown.astro` instead of
+re-reading and re-formatting the document, the state object is built from the track names, and the per-API bar rows and two captions
+were dropped, which took the first working build from 7.4 KB to 6.5 KB.
+
+**Future growth beyond 6.8 KB requires another explicit decision.** No other budget changed.
 
 ## Rejected
 - **WebGL.** The teardown is a diagram a visitor must read, so it is DOM (ADR-0005), plus the one 2D canvas above.

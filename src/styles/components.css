@@ -109,13 +109,18 @@ html[data-tier='C'] :is(.hard, .hard-lift):is(:hover, :focus-visible) { transfor
 .tags a:hover { border-color: var(--c-system); }
 .info { color: var(--c-info); }
 .td-track { height: 700vh; position: relative; }
-.td-stage { position: sticky; top: 56px; height: calc(100svh - 56px); overflow: hidden; contain: layout paint; background: var(--c-bg); }
+.td-stage { position: sticky; top: 56px; height: calc(100svh - 56px); overflow: hidden; contain: layout paint; background: var(--c-bg); padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
 .td-stage.is-hot { will-change: transform; }
 .td-stage > *, .td-layer > *, .td-world > * { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
-.td-world { inset: 0; width: 100%; height: 100%; }
+.td-world { inset: 0; width: 100%; height: 100%; perspective: 1200px; } /* PERSP in engine/motion/explode.ts */
+.td-slabs { inset: 0; width: 100%; height: 100%; transform-style: preserve-3d; } /* the only preserve-3d group */
+.td-slabs > * { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.td-shell { border: 1px solid var(--c-text); }
+.td-shell::before { content: ''; position: absolute; inset: 0; background: var(--c-text); opacity: var(--f, 0); }
+.td-slab { transform-origin: 50% 50%; backface-visibility: hidden; }
 .td-stage > .td-canvas { transform-origin: 0 0; }
 .td-layer { inset: 0; width: 100%; height: 100%; }
-.td-lab { white-space: pre-line; }
+.td-lab { white-space: pre-line; background: color-mix(in srgb, var(--c-bg) 70%, transparent); } /* a tint of --c-bg, so text stays readable over the stream */
 .td-head, .td-an, .td-title, .td-lab, .td-api, .td-total, .td-model, .td-chain { font-size: var(--t-xs); }
 .td-head { color: var(--c-muted); }
 .td-sha { font-size: 10px; overflow-wrap: anywhere; }

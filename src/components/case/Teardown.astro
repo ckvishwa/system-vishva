@@ -1,5 +1,5 @@
 ---
-// MalTrace teardown (ADR-0016). This component renders the whole thing as a static document: seven states in reading
+// MalTrace teardown (ADR-0016). This component renders the whole thing as a static document: nine states in reading
 // order with every number visible. That is what no-JS, reduced motion, tier C, /plain and screen readers get. On tier A/B
 // the lazy script (engine/motion/teardown.ts) reads this same markup (data-td-* attributes), builds an aria-hidden sticky
 // stage from it, and visually hides this document. It never invents anything: values come from the two validated artifacts
@@ -31,14 +31,41 @@ const model = pipeline.find((p) => /forest/i.test(p));
 const indicators = [...(s.top_malware_indicators ?? []), ...(s.top_benign_indicators ?? [])];
 const signed = (n: number) => `${n > 0 ? '+' : ''}${n}`;
 const mitre = (id: string) => `https://attack.mitre.org/techniques/${id.replace('.', '/')}/`;
-// PULL-BACK: the whole investigation chain, one real number per stage (the pipeline names come from maltrace.mdx)
+// The end of MAP: the whole investigation chain, one real number per stage (the pipeline names come from maltrace.mdx)
 const top = indicators[0]?.feature ?? '';
 const chain = pipeline.length === 7 ? [`${t.file.sha256.slice(0, 8)}…`, t.process_count !== undefined ? `${t.process_count} processes` : '', t.api_total !== undefined ? fmt(t.api_total) : '', `${claim['maltrace-features']!.display} features`, claim['maltrace-confidence']!.display, top, `${t.attack_ids?.length ?? 0} techniques`] : [];
 // Everything the top 12 do not account for: a real number (api_total minus the top 12), and the 13th lane of the stream.
 const other = t.api_top && t.api_total !== undefined ? t.api_total - t.api_top.reduce((n, a) => n + a.count, 0) : 0;
+const hasOffset = !!t.sections?.some((x) => x.raw_offset !== undefined), hasVa = !!t.sections?.some((x) => x.virtual_address !== undefined), hasVsize = !!t.sections?.some((x) => x.virtual_size !== undefined);
+const hex = (n: number) => `0x${n.toString(16)}`;
+// Everything the animated stage shows, as ONE object built from the same variables as the document above: the lazy script
+// parses it instead of re-reading and re-formatting the markup (that kept the stage chunk small). Short keys on purpose.
+const lines = (x: NonNullable<typeof t.sections>[number], i: number) => [`${i + 1}  ${x.name}`, x.raw_offset !== undefined && `raw offset ${hex(x.raw_offset)}`, `raw size ${fmt(x.size)} B`, x.virtual_address !== undefined && `virtual address ${hex(x.virtual_address)}`, x.virtual_size !== undefined && `virtual size ${fmt(x.virtual_size)} B`, `entropy ${x.entropy.toFixed(2)}${entropyNote(x.entropy) ? ` · ${entropyNote(x.entropy)}` : ''}`].filter(Boolean).join('\n');
+const apis = t.api_top ? [...t.api_top.map((a) => a.count), ...(other > 0 ? [other] : [])] : [];
+const payload = {
+  f: { z: t.file.size, h: t.file.sha256 },
+  t: `${t.file.name} · ${fmt(t.file.size)} bytes`,
+  a: `Analysis ${t.analysis_id}`,
+  s: t.sections?.map((x, i) => ({ l: lines(x, i), e: x.entropy, z: x.size, o: x.raw_offset })),
+  ap: apis.length ? apis : undefined,
+  tot: t.api_total,
+  np: t.process_count,
+  d: claim['maltrace-features-dynamic']?.value,
+  st: claim['maltrace-features-static']?.value,
+  sn: featuresRaw.static,
+  dl: `${claim['maltrace-features-dynamic']?.display} dynamic behavioral`,
+  sl: `${claim['maltrace-features-static']?.display} static PE`,
+  m: model,
+  v: verdict,
+  vs: 'A single-sample prediction, not model accuracy.',
+  sh: indicators.map((i) => ({ l: `${i.feature} ${signed(i.shap_impact)}`, v: i.shap_impact })),
+  sc: `← away from malicious · toward malicious →${s.shap_base_value !== undefined ? `\nSHAP base value ${s.shap_base_value}` : ''}`,
+  tg: t.attack_ids?.map((id) => [id, mitre(id)]),
+  ch: chain.length ? pipeline.map((p, i) => [p, chain[i]]) : undefined,
+};
 const head = (i: number) => `${String(i).padStart(2, '0')} ${STATES[i].name}`;
 ---
-<section class="wrap teardown" aria-labelledby="td-h" data-teardown data-model={model} data-analysis={t.analysis_id} data-procs={t.process_count} data-pipeline={chain.length ? pipeline.join('|') : undefined} data-dynamic={claim['maltrace-features-dynamic']?.value} data-static={claim['maltrace-features-static']?.value} data-base={s.shap_base_value}>
+<section class="wrap teardown" aria-labelledby="td-h" data-teardown data-td={JSON.stringify(payload)}>
   <h2 id="td-h" class="mono muted">Teardown</h2>
   <div class="td-doc">
     <section class="td-state" aria-labelledby="td-0">
@@ -51,13 +78,21 @@ const head = (i: number) => `${String(i).padStart(2, '0')} ${STATES[i].name}`;
     {t.sections && (
       <section class="td-state" aria-labelledby="td-1">
         <h3 id="td-1" class="mono">{head(1)} <span class="muted">{STATES[1].meaning}</span></h3>
+        <p class="td-big">{t.sections.length} PE sections</p>
+        <p class="mono">In section-table order: {t.sections.map((x) => x.name).join(', ')}.</p>
+      </section>
+    )}
+
+    {t.sections && (
+      <section class="td-state" aria-labelledby="td-2">
+        <h3 id="td-2" class="mono">{head(2)} <span class="muted">{STATES[2].meaning}</span></h3>
         <table class="mono">
-          <caption class="muted">PE sections: slab height is proportional to size; the real sizes are listed here.</caption>
-          <thead><tr><th scope="col">Section</th><th scope="col">Size, bytes</th><th scope="col">Entropy</th><th scope="col">Note</th></tr></thead>
+          <caption class="muted">PE sections as recorded by the sandbox. A column appears only when the data has it.</caption>
+          <thead><tr><th scope="col">ID</th><th scope="col">Section</th>{hasOffset && <th scope="col">Raw offset</th>}<th scope="col">Raw size, bytes</th>{hasVa && <th scope="col">Virtual address</th>}{hasVsize && <th scope="col">Virtual size, bytes</th>}<th scope="col">Entropy</th><th scope="col">Note</th></tr></thead>
           <tbody>
-            {t.sections.map((x) => (
-              <tr data-td-sec data-name={x.name} data-size={x.size} data-entropy={x.entropy} data-note={entropyNote(x.entropy) ?? undefined}>
-                <th scope="row">{x.name}</th><td>{fmt(x.size)}</td><td>{x.entropy.toFixed(2)}</td><td class="info">{entropyNote(x.entropy)}</td>
+            {t.sections.map((x, i) => (
+              <tr data-td-sec data-name={x.name} data-size={x.size} data-entropy={x.entropy} data-note={entropyNote(x.entropy) ?? undefined} data-offset={x.raw_offset} data-va={x.virtual_address} data-vsize={x.virtual_size}>
+                <td>{i + 1}</td><th scope="row">{x.name}</th>{hasOffset && <td>{x.raw_offset !== undefined ? hex(x.raw_offset) : ''}</td>}<td>{fmt(x.size)}</td>{hasVa && <td>{x.virtual_address !== undefined ? hex(x.virtual_address) : ''}</td>}{hasVsize && <td>{x.virtual_size !== undefined ? fmt(x.virtual_size) : ''}</td>}<td>{x.entropy.toFixed(2)}</td><td class="info">{entropyNote(x.entropy)}</td>
               </tr>
             ))}
           </tbody>
@@ -65,13 +100,13 @@ const head = (i: number) => `${String(i).padStart(2, '0')} ${STATES[i].name}`;
       </section>
     )}
 
-    {(t.api_total !== undefined || t.api_top) && (
-      <section class="td-state" aria-labelledby="td-2">
-        <h3 id="td-2" class="mono">{head(2)} <span class="muted">{STATES[2].meaning}</span></h3>
+    {(t.api_total !== undefined || t.api_top || t.process_count !== undefined) && (
+      <section class="td-state" aria-labelledby="td-3">
+        <h3 id="td-3" class="mono">{head(3)} <span class="muted">{STATES[3].meaning}</span></h3>
         {t.api_total !== undefined && <p class="td-big" data-td-total data-value={t.api_total}>{fmt(t.api_total)} API calls{t.process_count !== undefined && <span class="muted"> across {t.process_count} processes</span>}</p>}
         {t.api_top && (
           <table class="mono">
-            <caption class="muted">Top {t.api_top.length} API calls by count{other > 0 ? ', and all the rest' : ''}</caption>
+            <caption class="muted">Top {t.api_top.length} API calls by count{other > 0 ? ', and all the rest' : ''}. The stream does not tie any API to a PE section.</caption>
             <thead><tr><th scope="col">API</th><th scope="col">Calls</th></tr></thead>
             <tbody>
               {t.api_top.map((a) => <tr data-td-api data-name={a.api} data-count={a.count}><th scope="row">{a.api}</th><td>{fmt(a.count)}</td></tr>)}
@@ -82,23 +117,29 @@ const head = (i: number) => `${String(i).padStart(2, '0')} ${STATES[i].name}`;
       </section>
     )}
 
-    <section class="td-state" aria-labelledby="td-3">
-      <h3 id="td-3" class="mono">{head(3)} <span class="muted">{STATES[3].meaning}</span></h3>
+    <section class="td-state" aria-labelledby="td-4">
+      <h3 id="td-4" class="mono">{head(4)} <span class="muted">{STATES[4].meaning}</span></h3>
       <p class="td-big">{claim['maltrace-features']!.display} features</p>
       <p class="mono">{claim['maltrace-features-dynamic']!.display} dynamic behavioral + {claim['maltrace-features-static']!.display} static PE.</p>
       <p class="mono muted">Static PE features: <span>{featuresRaw.static.map((n) => <span data-td-static data-name={n}>{n} </span>)}</span></p>
     </section>
 
-    <section class="td-state" aria-labelledby="td-4">
-      <h3 id="td-4" class="mono">{head(4)} <span class="muted">{STATES[4].meaning}</span></h3>
+    <section class="td-state" aria-labelledby="td-5">
+      <h3 id="td-5" class="mono">{head(5)} <span class="muted">{STATES[5].meaning}</span></h3>
+      <p class="td-big">{model ?? 'Model'}</p>
+      <p class="mono">The {claim['maltrace-features']!.display} features feed one model.</p>
+    </section>
+
+    <section class="td-state" aria-labelledby="td-6">
+      <h3 id="td-6" class="mono">{head(6)} <span class="muted">{STATES[6].meaning}</span></h3>
       <p class="td-verdict-static inverted" data-tone="risk" data-td-verdict>{verdict}</p>
       <p class="mono muted" data-td-sub>A single-sample prediction, not model accuracy.</p>
       {s.shap_base_value !== undefined && <p class="mono muted">SHAP base value {s.shap_base_value}</p>}
     </section>
 
     {indicators.length > 0 && (
-      <section class="td-state" aria-labelledby="td-5">
-        <h3 id="td-5" class="mono">{head(5)} <span class="muted">{STATES[5].meaning}</span></h3>
+      <section class="td-state" aria-labelledby="td-7">
+        <h3 id="td-7" class="mono">{head(7)} <span class="muted">{STATES[7].meaning}</span></h3>
         <table class="mono">
           <caption class="muted">Per-feature SHAP contributions: positive pushes toward malicious, negative away from it.</caption>
           <thead><tr><th scope="col">Feature</th><th scope="col">Value</th><th scope="col">SHAP</th><th scope="col">Direction</th></tr></thead>
@@ -107,9 +148,9 @@ const head = (i: number) => `${String(i).padStart(2, '0')} ${STATES[i].name}`;
       </section>
     )}
 
-    {(t.attack_ids?.length || t.signatures?.length) && (
-      <section class="td-state" aria-labelledby="td-6">
-        <h3 id="td-6" class="mono">{head(6)} <span class="muted">{STATES[6].meaning}</span></h3>
+    {(t.attack_ids?.length || t.signatures?.length || chain.length > 0) && (
+      <section class="td-state" aria-labelledby="td-8">
+        <h3 id="td-8" class="mono">{head(8)} <span class="muted">{STATES[8].meaning}</span></h3>
         {t.attack_ids && <ul class="mono tags">{t.attack_ids.map((id) => <li><a data-td-attack href={mitre(id)} rel="noopener" target="_blank">{id}</a></li>)}</ul>}
         {t.signatures && (
           <table class="mono">
@@ -118,17 +159,13 @@ const head = (i: number) => `${String(i).padStart(2, '0')} ${STATES[i].name}`;
             <tbody>{t.signatures.map((x) => <tr><th scope="row">{x.name}</th><td>{x.severity}</td></tr>)}</tbody>
           </table>
         )}
-      </section>
-    )}
-
-    {chain.length > 0 && (
-      <section class="td-state" aria-labelledby="td-7">
-        <h3 id="td-7" class="mono">{head(7)} <span class="muted">{STATES[7].meaning}</span></h3>
-        <table class="mono">
-          <caption class="muted">The investigation chain, one number per stage.</caption>
-          <thead><tr><th scope="col">Stage</th><th scope="col">Result</th></tr></thead>
-          <tbody>{pipeline.map((s, i) => <tr><th scope="row">{s}</th><td>{chain[i]}</td></tr>)}</tbody>
-        </table>
+        {chain.length > 0 && (
+          <table class="mono">
+            <caption class="muted">The investigation chain, one number per stage.</caption>
+            <thead><tr><th scope="col">Stage</th><th scope="col">Result</th></tr></thead>
+            <tbody>{pipeline.map((s, i) => <tr><th scope="row">{s}</th><td>{chain[i]}</td></tr>)}</tbody>
+          </table>
+        )}
       </section>
     )}
   </div>

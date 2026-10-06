@@ -82,3 +82,28 @@ describe('schemas', () => {
     expect(teardownSchema.safeParse({ file }).success).toBe(false);
   });
 });
+
+describe('optional PE section fields: raw offset and virtual address', () => {
+  const raw = () => read('maltrace-teardown.json');
+  it('the current CAPE extract has neither, and nothing is derived in their place', () => {
+    for (const s of raw().sections) { expect(s).not.toHaveProperty('raw_offset'); expect(s).not.toHaveProperty('virtual_address'); }
+    const t = teardownSchema.parse(raw());
+    for (const s of t.sections!) { expect(s.raw_offset).toBeUndefined(); expect(s.virtual_address).toBeUndefined(); }
+  });
+  it('accept both when the extract has them, parsed from hex', () => {
+    const withBoth = { ...raw(), sections: raw().sections.map((s: any, i: number) => ({ ...s, raw_offset: `0x${(1024 + i * 4096).toString(16)}`, virtual_address: `0x${(4096 + i * 4096).toString(16)}` })) };
+    const t = teardownSchema.parse(withBoth);
+    expect(t.sections![0].raw_offset).toBe(1024);
+    expect(t.sections![1].virtual_address).toBe(8192);
+  });
+  it('reject malformed ones', () => {
+    expect(teardownSchema.safeParse({ ...raw(), sections: [{ ...raw().sections[0], raw_offset: '1024' }] }).success).toBe(false);
+    expect(teardownSchema.safeParse({ ...raw(), sections: [{ ...raw().sections[0], virtual_address: 'zz' }] }).success).toBe(false);
+  });
+  it('the static document hides a column that no section has', () => {
+    const src = readFileSync('src/components/case/Teardown.astro', 'utf8');
+    expect(src).toMatch(/hasOffset &&/);
+    expect(src).toMatch(/hasVa &&/);
+  });
+});
+
