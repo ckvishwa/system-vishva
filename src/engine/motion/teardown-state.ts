@@ -55,6 +55,8 @@ export const TRACKS = {
   pull: [[T3.s, 0], [T3.e, 1]],
   streamOpacity: [[T2.s, 0], [T2.s + 0.3 * W, 1], [T3.s, 1], [T3.s + 0.5 * W, 0]],
   streamBars: [[T2.s, 0], [T2.e, 1]],
+  // the 600-point stream (canvas): it follows the matrix and the funnel, and is gone before the stillness
+  pointsOpacity: [[T2.s + 0.1 * W, 0], [T2.s + 0.4 * W, 1], [STILL.s - 0.15 * W, 1], [STILL.s, 0]],
   procGrow: [[T2.s + 0.3 * W, 0], [T2.e, 1]],
   procOpacity: [[T2.s + 0.3 * W, 0], [T2.s + 0.4 * W, 1], [T3.e - 0.2 * W, 1], [T3.e, 0]],
   gridAssemble: [[T3.s, 0], [T3.e, 1]],
@@ -82,6 +84,7 @@ export interface Layers {
   slabs: { opacity: number; gap: number; x: number; labels: number };
   pull: number;
   stream: { opacity: number; bars: number };
+  points: { opacity: number };
   procs: { grow: number; opacity: number };
   grid: { opacity: number; assemble: number; converge: number };
   model: { opacity: number };
@@ -103,6 +106,7 @@ export function teardownState(progress: number): Layers {
     slabs: { opacity: v('slabsOpacity'), gap: v('slabsGap'), x: v('slabsX'), labels: v('slabsLabels') },
     pull: v('pull'),
     stream: { opacity: v('streamOpacity'), bars: v('streamBars') },
+    points: { opacity: v('pointsOpacity') },
     procs: { grow: v('procGrow'), opacity: v('procOpacity') },
     grid: { opacity: v('gridOpacity'), assemble: v('gridAssemble'), converge: v('gridConverge') },
     model: { opacity: v('modelOpacity') },

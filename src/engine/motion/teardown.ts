@@ -10,6 +10,8 @@
  */
 import { scheduler } from '../scheduler';
 import { trackScroll } from '../input/scroll';
+import { trackGyro } from '../input/gyro';
+import { allocate, assign, lanePos, pointPos, type Lane, type Pt } from './stream';
 import { springStep, settled, type Spring } from './spring';
 import { teardownState, stageProgress, slabHeights, barLengths, STATES, type Layers } from './teardown-state';
 
@@ -67,6 +69,9 @@ export function initTeardown(root: HTMLElement): () => void {
   let cx = 0, cy = 0; // where the slabs, the process nodes and the matrix are pulled to
   let mid: [number, number] = [0, 0]; // the model node's centre
   let bars = { x: 0, ax: 0, half: 0, y0: 0, rh: 0, off: 4 };
+  let lanes: Lane[] = []; // one per API row: where its points travel
+  let cellPos: Pt[] = [], dpr = 1;
+  let dx = 0, dy = 0; // gyro depth offset in px (at most 6): slabs and ATT&CK nodes only
   const shapLen = barLengths(shap.map((s) => s.v));
 
   if (secs.length) {
@@ -92,7 +97,7 @@ export function initTeardown(root: HTMLElement): () => void {
         op(g, l.slabs.opacity);
         slabs.forEach((s, i) => {
           const y = s.y + l.slabs.gap * gp * i, flat = lerp(1, 0.03, f);
-          tr(s.e, x, lerp(y + (s.h * (1 - flat)) / 2, cy, f), 1, flat); // slabs resize with scaleY, never height
+          tr(s.e, x + dx * (i + 1) / slabs.length, lerp(y + (s.h * (1 - flat)) / 2, cy, f) + dy * (i + 1) / slabs.length, 1, flat); // slabs resize with scaleY, never height; gyro adds depth only
           tr(s.lab, m ? x : x + gw + 12, m ? y + s.h + 2 : y + Math.max(0, (s.h - 14) / 2));
           op(s.lab, l.slabs.labels);
         });
@@ -112,6 +117,7 @@ export function initTeardown(root: HTMLElement): () => void {
         rh = Math.min(30, (r.h - 36) / rows.length);
         if (totalEl) { box(totalEl, r.w); tr(totalEl, r.x, r.y); }
         rows.forEach((o, i) => { box(o.name, r.w); box(o.bar, r.w, 3); tr(o.name, r.x, r.y + 36 + i * rh); });
+        lanes = rows.map((_, i) => ({ y: r.y + 36 + i * rh + 9, x0: r.x, x1: r.x + r.w, h: rh * 0.9 }));
       },
       apply(l) {
         op(g, l.stream.opacity);
@@ -160,6 +166,7 @@ export function initTeardown(root: HTMLElement): () => void {
         pos = cells.map((c) => c.i < dyn ? [x0 + (c.i % cols) * step, r.y + 24 + Math.floor(c.i / cols) * step] : [x0 + ((c.i - dyn) % cols) * step, r.y + 48 + (rows + Math.floor((c.i - dyn) / cols)) * step]);
         from = cells.map((c) => [geo.side.x + ((c.i * 37) % geo.side.w), geo.side.y + ((c.i * 53) % geo.side.h)]);
         mid = [r.x + r.w / 2, r.y + r.h * 0.3];
+        cellPos = pos.map((p) => [p[0] + size / 2, p[1] + size / 2]);
         cells.forEach((c) => box(c.e!, size, size));
         box(lab1, r.w); box(lab2, r.w);
         tr(lab1, r.x, r.y); tr(lab2, r.x, r.y + 24 + rows * step);
@@ -173,6 +180,39 @@ export function initTeardown(root: HTMLElement): () => void {
           const [px, py] = pos[c.i], [fx, fy] = from[c.i];
           tr(c.e!, lerp(lerp(fx, px, a), mid[0] - size / 2, k), lerp(lerp(fy, py, a), mid[1] - size / 2, k), lerp(1, 0.3, k));
         });
+      },
+    });
+  }
+
+  // The stream: <= 600 points on one 2D canvas, each API's share proportional to its real count. Meaning: flow volume.
+  const cv = apis.length && cells.length ? el('canvas', 'td-canvas') as HTMLCanvasElement : null;
+  const ctx = cv?.getContext('2d') ?? null;
+  if (cv && ctx) {
+    stage.prepend(cv);
+    const { lane, cell } = assign(allocate(apis.map((a) => a.count)), cells.length);
+    const fill = getComputedStyle(root).getPropertyValue('--c-info').trim() || '#fff'; // read once, never inside a frame
+    let size = 0, ox = 0, oy = 0;
+    layers.push({
+      place(geo) {
+        dpr = Math.min(2, devicePixelRatio || 1);
+        cv.width = geo.W * dpr; cv.height = geo.H * dpr;
+        box(cv, geo.W, geo.H);
+        size = Math.max(2, Math.round(geo.W / 400));
+        ox = geo.W / 2; oy = cy;
+      },
+      apply(l) {
+        const s = l.cam.scale;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, cv.width, cv.height);
+        if (l.points.opacity <= 0) return;
+        ctx.setTransform(s * dpr, 0, 0, s * dpr, dpr * (ox - s * ox), dpr * (oy - s * oy + l.cam.y * H)); // the camera
+        ctx.globalAlpha = l.points.opacity;
+        ctx.fillStyle = fill;
+        const flow = drawn * 6; // lanes scroll with the page: six laps over the whole scroll
+        for (let j = 0; j < lane.length; j++) {
+          const [x, y] = pointPos(lanePos(j, lanes[lane[j]], flow), cellPos[cell[j]], mid, l.grid.assemble, l.grid.converge);
+          ctx.fillRect(x, y, size, size);
+        }
       },
     });
   }
@@ -244,7 +284,7 @@ export function initTeardown(root: HTMLElement): () => void {
           const o = clamp(l.map.grow * (els.length + 3) - i), j = i % Math.max(1, shap.length);
           const fx = bars.ax + (shap[j]?.v < 0 ? -1 : 1) * bars.half * (shapLen[j] ?? 0), fy = bars.y0 + j * bars.rh; // the end of a bar
           op(a, o);
-          tr(a, lerp(fx, pts[i][0], o), lerp(fy, pts[i][1], o));
+          tr(a, lerp(fx, pts[i][0], o) + dx, lerp(fy, pts[i][1], o) + dy);
         });
       },
     });
@@ -309,13 +349,18 @@ export function initTeardown(root: HTMLElement): () => void {
   };
   const retarget = (y: number) => { target = stageProgress(trackTop - y, trackH, vh); };
 
+  // gyro adds depth only (at most 6 px) and never touches progress: scroll owns the story. Events set a goal, a frame eases to it.
+  let goal: [number, number] = [0, 0];
   const sched = scheduler();
   sched.add(ID, (dt) => {
     cur = springStep(cur, target, dt / 1000);
     const done = settled(cur, target);
     if (done) cur = { x: target, v: 0 };
+    const gMoving = Math.abs(goal[0] - dx) + Math.abs(goal[1] - dy) > 0.05;
+    dx = gMoving ? lerp(dx, goal[0], 0.2) : goal[0]; dy = gMoving ? lerp(dy, goal[1], 0.2) : goal[1];
+    if (gMoving) drawn = -1;
     draw(cur.x);
-    return !done; // keep running only while the glide is still moving; then sleep
+    return !done || gMoving; // keep running only while something is still moving; then sleep
   });
 
   root.querySelector('h2')!.after(track);
@@ -334,5 +379,6 @@ export function initTeardown(root: HTMLElement): () => void {
   ro.observe(document.body); // content above the stage changing height moves the track
 
   const off = trackScroll((y) => { retarget(y); sched.invalidate(ID); });
-  return () => { off(); ro.disconnect(); io.disconnect(); clearTimeout(timer); sched.remove(ID); track.remove(); root.classList.remove('is-live'); };
+  const offGyro = trackGyro((x, y) => { goal = [x * 0.75, y * 0.75]; sched.invalidate(ID); }); // 8 px max -> 6 px
+  return () => { off(); offGyro(); ro.disconnect(); io.disconnect(); clearTimeout(timer); sched.remove(ID); track.remove(); root.classList.remove('is-live'); };
 }

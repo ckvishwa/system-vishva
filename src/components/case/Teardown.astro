@@ -34,6 +34,8 @@ const mitre = (id: string) => `https://attack.mitre.org/techniques/${id.replace(
 // PULL-BACK: the whole investigation chain, one real number per stage (the pipeline names come from maltrace.mdx)
 const top = indicators[0]?.feature ?? '';
 const chain = pipeline.length === 7 ? [`${t.file.sha256.slice(0, 8)}…`, t.process_count !== undefined ? `${t.process_count} processes` : '', t.api_total !== undefined ? fmt(t.api_total) : '', `${claim['maltrace-features']!.display} features`, claim['maltrace-confidence']!.display, top, `${t.attack_ids?.length ?? 0} techniques`] : [];
+// Everything the top 12 do not account for: a real number (api_total minus the top 12), and the 13th lane of the stream.
+const other = t.api_top && t.api_total !== undefined ? t.api_total - t.api_top.reduce((n, a) => n + a.count, 0) : 0;
 const head = (i: number) => `${String(i).padStart(2, '0')} ${STATES[i].name}`;
 ---
 <section class="wrap teardown" aria-labelledby="td-h" data-teardown data-model={model} data-analysis={t.analysis_id} data-procs={t.process_count} data-pipeline={chain.length ? pipeline.join('|') : undefined} data-dynamic={claim['maltrace-features-dynamic']?.value} data-static={claim['maltrace-features-static']?.value} data-base={s.shap_base_value}>
@@ -69,9 +71,12 @@ const head = (i: number) => `${String(i).padStart(2, '0')} ${STATES[i].name}`;
         {t.api_total !== undefined && <p class="td-big" data-td-total data-value={t.api_total}>{fmt(t.api_total)} API calls{t.process_count !== undefined && <span class="muted"> across {t.process_count} processes</span>}</p>}
         {t.api_top && (
           <table class="mono">
-            <caption class="muted">Top {t.api_top.length} API calls by count</caption>
+            <caption class="muted">Top {t.api_top.length} API calls by count{other > 0 ? ', and all the rest' : ''}</caption>
             <thead><tr><th scope="col">API</th><th scope="col">Calls</th></tr></thead>
-            <tbody>{t.api_top.map((a) => <tr data-td-api data-name={a.api} data-count={a.count}><th scope="row">{a.api}</th><td>{fmt(a.count)}</td></tr>)}</tbody>
+            <tbody>
+              {t.api_top.map((a) => <tr data-td-api data-name={a.api} data-count={a.count}><th scope="row">{a.api}</th><td>{fmt(a.count)}</td></tr>)}
+              {other > 0 && <tr data-td-api data-name="All other APIs" data-count={other}><th scope="row">All other APIs</th><td>{fmt(other)}</td></tr>}
+            </tbody>
           </table>
         )}
       </section>

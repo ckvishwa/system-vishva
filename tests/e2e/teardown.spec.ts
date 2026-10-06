@@ -49,7 +49,7 @@ test('the layers show the real numbers: sections, API total, verdict, SHAP, ATT&
 
   await goto(page, 3 / 8);
   await expect(page.locator('.td-total')).toHaveText('94,958 API calls');
-  expect(await page.locator('.td-api').count()).toBe(12);
+  expect(await page.locator('.td-api').count()).toBe(13); // the top 12 and 'All other APIs' (api_total minus the top 12)
   expect(await page.locator('.td-proc').count()).toBe(17); // process_count nodes, no invented edges
 
   await goto(page, 4.4 / 8);
@@ -219,4 +219,91 @@ test('the hash settles character by character', async ({ page }) => {
   expect(settled).toBeLessThan(64);                  // ...and the rest has not settled yet
   await goto(page, 1.2 / 8);
   await expect(page.locator('.td-sha')).toHaveText(sha);
+});
+
+/** Count of non-transparent pixels on the stream canvas, and the box they fall in. */
+const ink = (page: Page) => page.locator('.td-canvas').evaluate((c: HTMLCanvasElement) => {
+  const ctx = c.getContext('2d')!;
+  const d = ctx.getImageData(0, 0, c.width, c.height).data;
+  let n = 0, minX = c.width, maxX = 0;
+  for (let i = 3; i < d.length; i += 4) if (d[i] > 0) { n++; const x = ((i - 3) / 4) % c.width; if (x < minX) minX = x; if (x > maxX) maxX = x; }
+  return { n, minX, maxX, w: c.width };
+});
+
+test('the stream is one 2D canvas of points: empty when sealed, dense while it runs, gone before the verdict', async ({ page }) => {
+  await instrument(page);
+  await page.goto('/work/maltrace/');
+  await expect(page.locator('.td-stage')).toBeVisible();
+  await expect(page.locator('canvas')).toHaveCount(1);
+  expect(await page.locator('.td-canvas').evaluate((c: HTMLCanvasElement) => !!c.getContext('2d'))).toBe(true);
+  await goto(page, 0.5 / 8);
+  expect((await ink(page)).n).toBe(0);                       // sealed: no stream
+  await goto(page, 2.6 / 8);
+  const run = await ink(page);
+  expect(run.n).toBeGreaterThan(300);                         // up to 600 points, a few px each
+  expect(run.minX).toBeGreaterThan(run.w * 0.3);              // they travel in the stream lanes, not over the slabs
+  await goto(page, 3.4 / 8);
+  const matrix = await ink(page);
+  expect(matrix.n).toBeGreaterThan(300);                      // vacuumed into the matrix: still the same points
+  await goto(page, 4.2 / 8);
+  expect((await ink(page)).n).toBe(0);                        // stillness: the stream is gone, the verdict has the frame
+});
+
+test('the stream never shows more than 600 points', async ({ page }) => {
+  await instrument(page);
+  await page.goto('/work/maltrace/');
+  await expect(page.locator('.td-stage')).toBeVisible();
+  await goto(page, 2.6 / 8);
+  // each point is a size x size square; the canvas has at most 600 of them, so ink is bounded by 600 * size^2
+  const { n } = await ink(page);
+  const size = await page.locator('.td-canvas').evaluate((c: HTMLCanvasElement) => Math.max(2, Math.round((c.width / (window.devicePixelRatio || 1)) / 400)) * Math.min(2, window.devicePixelRatio || 1));
+  expect(n).toBeLessThanOrEqual(600 * (size + 1) * (size + 1));
+});
+
+test('reduced motion and /plain: no canvas at all, the top-12 bars stay as a static table', async ({ browser }) => {
+  const ctx = await browser.newContext({ reducedMotion: 'reduce' });
+  const page = await ctx.newPage();
+  await page.goto('/work/maltrace/');
+  await page.waitForTimeout(400);
+  await expect(page.locator('canvas')).toHaveCount(0);
+  await expect(page.locator('[data-td-api]')).toHaveCount(13);
+  await expect(page.locator('[data-td-api]').first()).toContainText('NtClose');
+  await ctx.close();
+  const p2 = await browser.newPage();
+  await p2.goto('/plain/');
+  await expect(p2.locator('canvas')).toHaveCount(0);
+  await p2.close();
+});
+
+test('gyro adds depth only: at most 6 px on the slabs and the nodes, and it never changes progress', async ({ page }) => {
+  await instrument(page);
+  await page.goto('/work/maltrace/');
+  await expect(page.locator('.td-stage')).toBeVisible();
+  await goto(page, 2.45 / 8);
+  const pos = () => page.locator('.td-slab').evaluateAll((els) => els.map((e) => { const m = (e as HTMLElement).style.transform.match(/translate3d\(([^,]+),([^,]+),/)!; return [parseFloat(m[1]), parseFloat(m[2])]; }));
+  await page.waitForTimeout(1200); // let the spring land before measuring
+  const before = await pos();
+  const p0 = await page.locator('.td-stage').getAttribute('data-p');
+  await page.evaluate(() => window.dispatchEvent(Object.assign(new Event('deviceorientation'), { gamma: 90, beta: 180 })));
+  await page.waitForTimeout(700);
+  const after = await pos();
+  const moved = after.map((a, i) => Math.hypot(a[0] - before[i][0], a[1] - before[i][1]));
+  moved.forEach((d) => expect(d).toBeLessThanOrEqual(6 * Math.SQRT2 + 0.01));
+  expect(Math.max(...moved)).toBeGreaterThan(1);                                  // it did move
+  expect(await page.locator('.td-stage').getAttribute('data-p')).toBe(p0);        // progress is untouched
+  expect(new URL(page.url()).pathname).toBe('/work/maltrace/');                   // and so is navigation
+  // the deepest slab moves most (depth), the shallowest least
+  expect(moved[3]).toBeGreaterThan(moved[0]);
+});
+
+test('0 idle frames after a gyro burst settles', async ({ page }) => {
+  await instrument(page);
+  await page.goto('/work/maltrace/');
+  await expect(page.locator('.td-stage')).toBeVisible();
+  await goto(page, 2.45 / 8);
+  await page.evaluate(() => window.dispatchEvent(Object.assign(new Event('deviceorientation'), { gamma: 40, beta: 100 })));
+  await page.waitForTimeout(1500);
+  await page.evaluate(() => { (window as any).__frames = 0; });
+  await page.waitForTimeout(1500);
+  expect(await page.evaluate(() => (window as any).__frames)).toBe(0);
 });

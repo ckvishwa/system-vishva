@@ -113,6 +113,7 @@ html[data-tier='C'] :is(.hard, .hard-lift):is(:hover, :focus-visible) { transfor
 .td-stage.is-hot { will-change: transform; }
 .td-stage > *, .td-layer > *, .td-world > * { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
 .td-world { inset: 0; width: 100%; height: 100%; }
+.td-stage > .td-canvas { transform-origin: 0 0; }
 .td-layer { inset: 0; width: 100%; height: 100%; }
 .td-lab { white-space: pre-line; }
 .td-head, .td-an, .td-title, .td-lab, .td-api, .td-total, .td-model, .td-chain { font-size: var(--t-xs); }

@@ -134,7 +134,7 @@ describe('STILLNESS: the verdict stamp gets the whole frame to itself', () => {
 });
 
 describe('teardownState: invariants', () => {
-  const flat = (l: Layers) => [l.hash.settle, l.slabs.opacity, l.slabs.gap, l.slabs.x, l.slabs.labels, l.pull, l.stream.opacity, l.stream.bars, l.procs.grow, l.procs.opacity, l.grid.opacity, l.grid.assemble, l.grid.converge, l.model.opacity, l.verdict.opacity, l.verdict.reveal, l.verdict.dock, l.explain.open, l.explain.opacity, l.explain.bars, l.map.grow, l.chain.opacity];
+  const flat = (l: Layers) => [l.hash.settle, l.slabs.opacity, l.slabs.gap, l.slabs.x, l.slabs.labels, l.pull, l.stream.opacity, l.stream.bars, l.points.opacity, l.procs.grow, l.procs.opacity, l.grid.opacity, l.grid.assemble, l.grid.converge, l.model.opacity, l.verdict.opacity, l.verdict.reveal, l.verdict.dock, l.explain.open, l.explain.opacity, l.explain.bars, l.map.grow, l.chain.opacity];
 
   it('every value stays within 0..1 for any progress, including garbage', () => {
     for (const p of [-5, -0.001, 0, 0.123, 0.5, 0.999, 1, 1.5, NaN, Infinity, -Infinity])
