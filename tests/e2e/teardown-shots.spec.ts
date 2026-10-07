@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
+import sharp from 'sharp';
 import { instrument } from './helpers';
 import { holdRange, rawForP } from '../../src/engine/motion/story-map';
 
@@ -44,6 +45,16 @@ for (const [size, viewport] of Object.entries(SIZES)) {
       const box = await page.locator('.td-slab').first().boundingBox();
       expect(box!.width).toBeGreaterThan(50);
       await page.screenshot({ path: `${DIR}/${browserName}-${name}-${size}.png` });
+      // The ghost regression (a faint "21 API calls" painted at the EXPLODE dwell, first seen in WebKit): where the API total sits, an
+      // absent layer must leave the page background, byte for byte, in every engine.
+      if (size === '1280' && (name === 'dwell-explode' || name === 'dwell-xray')) { // on a phone the last annotation sits over that spot
+        const b = (await page.locator('.td-total').boundingBox())!;
+        const clip = { x: Math.max(0, b.x - 8), y: Math.max(0, b.y - 8), width: Math.min(b.width, 360) + 16, height: b.height + 16 };
+        const { data, info } = await sharp(await page.screenshot({ clip })).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+        let max = 0; for (const v of data) if (v > max) max = v;
+        const bg = Math.min(...data);
+        expect(max - bg, `${browserName} ${size} ${name}: ghost pixels in ${info.width}x${info.height} where the total would be`).toBe(0);
+      }
     }
   });
 }

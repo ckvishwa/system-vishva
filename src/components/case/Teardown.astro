@@ -11,7 +11,7 @@ import shapRaw from '../../content/work/maltrace/shap_wannacry_exe.json';
 import featuresRaw from '../../content/work/maltrace/maltrace-features.json';
 import mdxRaw from '../../content/work/maltrace.mdx?raw';
 import { teardownSchema, shapSchema, teardownProblems } from '../../content/teardown';
-import { STATES, entropyNote } from '../../engine/motion/teardown-state';
+import { STATES, TRACKS, entropyNote } from '../../engine/motion/teardown-state';
 
 interface Props { pipeline?: string[] }
 const { pipeline = [] } = Astro.props;
@@ -63,6 +63,7 @@ const payload = {
   sc: `← away from malicious · toward malicious →${s.shap_base_value !== undefined ? `\nSHAP base value ${s.shap_base_value}` : ''}`,
   tg: t.attack_ids?.map((id) => [id, mitre(id)]),
   ch: chain.length ? pipeline.map((p, i) => [p, chain[i]]) : undefined,
+  k: TRACKS, // the timeline's keyframe tracks: data for the lazy script, so they are not part of its size
 };
 const head = (i: number) => `${String(i).padStart(2, '0')} ${STATES[i].name}`;
 ---

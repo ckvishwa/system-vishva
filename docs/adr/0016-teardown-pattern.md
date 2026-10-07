@@ -104,8 +104,32 @@ scroll distance where the visual state stays fixed.
   range (VERDICT is absolute stillness), so the picture does not change; unit tests assert it, and that every layer is identical
   across the jump.
 - **The verdict stamps at the start of the beat**, then nothing changes for the whole dwell (asserted layer by layer and in the browser).
-- **Cost:** about 0.35 KB of the teardown chunk (6,797 B of the 6,800 B limit). The mapping is a table and one short function; the
+- **Cost:** about 0.35 KB of the teardown chunk (6,797 B of the 6,800 B limit at the time; see amendment 3 for the recovery). The mapping is a table and one short function; the
   test-only helpers (`storyInfo`, `holdRange`, `rawForP`, the hold names) are not in the shipped chunk. No budget changed.
+
+## Amendment 2026-10-07 (3): stabilization
+No new state or visual. Two fixes and a size recovery.
+
+- **The ghost was a timeline bug, not a browser bug.** At the EXPLODE dwell a faint "21 API calls" was painted (first seen in the
+  WebKit screenshot; Chromium has it too, at 0.6% opacity). The element is the DETONATE counter, `.td-total`. Windows used to start
+  half an overlap *before* their state (`k*W - overlap/2`), so DETONATE's stream, counter and processes began at 2.925 states, inside the
+  EXPLODE hold at 2.96, and a hold is a frame whose layers are all constants. The same leak existed, invisibly, at the other holds
+  (EXPLODE's lift began inside X-RAY's). A window now starts exactly at its state and runs the overlap past its end, X-RAY finishes
+  before its hold, and unit tests assert that every layer belonging to a later state is **exactly zero** at each hold, on both profiles.
+  Pacing is unchanged (970vh desktop, 835vh phone, the same dwell lengths, the same VERDICT stillness jump).
+- **Defence in depth for absent layers.** `op()` drives opacity for every layer, and at the terminal zero (under 0.004) it also sets
+  `visibility: hidden`, restoring it as soon as the value rises. Never `display: none`, so nothing reflows and no layout is read. It is
+  one helper, so every teardown layer gets it; an e2e audit checks that no stage element sits in the 0 < opacity < 0.004 sliver or is
+  visible at zero in any hold. A screenshot test (Chromium and WebKit, in CI) clips the page where the total would be at the EXPLODE
+  and X-RAY dwells on desktop and requires the pixels to be the page background exactly.
+- **Size: 6,797 B to 6,153 B (-644 B), limit unchanged at 6,800 B.** The timeline's keyframe tracks are data, not code. They now live
+  in the page payload (`Teardown.astro` serialises `TRACKS` into `data-td`), and the running stage gets only the function that evaluates
+  tracks (`layersFrom`, in `teardown-core.ts`). `teardown-state.ts` binds the same function to the same tracks for tests and the build,
+  so there is still one timeline. The cost is about 0.55 KB gzipped more HTML on the MalTrace page (7.0 to 7.6 KB), paid once by
+  every visitor to that page including reduced-motion ones, who never run the stage; the lazy JavaScript shrank by 0.64 KB. Smaller
+  mechanical trims: a `lab()` helper, `toLocaleString` instead of an `Intl.NumberFormat`, the slab transform built inline, per-slab
+  constants precomputed in `place`, the stream's lane assignment inline, and test-only code kept out of the shipped chunk.
+  Some obvious "dedupes" made it larger (named constants for repeated tracks, `u(k)` instead of `k * W`): gzip prefers the repetition.
 
 ## Rejected
 - **WebGL.** The teardown is a diagram a visitor must read, so it is DOM (ADR-0005), plus the one 2D canvas above.

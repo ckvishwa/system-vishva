@@ -103,7 +103,9 @@ Scroll sets a target; a critically damped spring glides what is shown to it and 
 frames. Geometry is measured on load and on resize (debounced ResizeObserver), never inside a frame. Only transform, opacity and
 clip-path animate; sizes are set on resize and slabs resize with scaleY. The stage has `contain: layout paint`, and `will-change`
 only while it is on screen. Counters write text only when the integer changes. Gyro adds at most 6 px of depth to the slabs and the
-ATT&CK nodes and never touches progress. The lazy chunk is size-limited to 6.8 KB gzipped (see ADR-0016); the dwell mapping adds about 0.35 KB of it.
+ATT&CK nodes and never touches progress. The lazy chunk is size-limited to 6.8 KB gzipped and measures about 6.15 KB (see ADR-0016): the timeline's keyframe tracks are data in the
+page payload, not code in the script. A held frame contains nothing from the next state (a unit test asserts every later layer is exactly
+zero at each hold), and a layer at its terminal zero is also `visibility: hidden`.
 
 Screenshots of X-RAY, EXPLODE and DETONATE while moving, and of the centre of each hero dwell (X-RAY, EXPLODE, DETONATE,
 VERDICT, MAP), at 1280 and 390 px in Chromium and WebKit are produced by `tests/e2e/teardown-shots.spec.ts` (CI uploads them as the

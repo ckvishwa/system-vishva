@@ -50,22 +50,22 @@ describe('the teardown timeline', () => {
     }
   });
 
-  it('a state moves during its own span: its window is the state widened by half the overlap at each end', () => {
+  it('a state moves during its own span: its window starts exactly at the state and runs the overlap past its end', () => {
     for (let k = 1; k <= 7; k++) {
       const w = T(k);
       near(w.e - w.s, W + OVERLAP);
-      near(w.s, k * W - OVERLAP / 2);
-      near(w.e, (k + 1) * W + OVERLAP / 2);
+      near(w.s, k * W);
+      near(w.e, (k + 1) * W + OVERLAP);
     }
   });
 
-  it('nothing is shown ahead of its state: EXPLODE has not started lifting before the scroll is in EXPLODE (bar the overlap)', () => {
-    expect(sample(TRACKS.slabsGap, 2 * W - OVERLAP / 2 - 1e-9)).toBe(0);
+  it('nothing is shown ahead of its state: EXPLODE has not started lifting before the scroll is in EXPLODE', () => {
+    expect(sample(TRACKS.slabsGap, 2 * W)).toBe(0);
     expect(sample(TRACKS.slabsGap, 1.9 * W)).toBe(0);
     expect(sample(TRACKS.slabsGap, 2.5 * W)).toBeGreaterThan(0.3);
-    expect(sample(TRACKS.streamTotal, 3 * W - OVERLAP / 2 - 1e-9)).toBe(0);   // DETONATE
-    expect(sample(TRACKS.pull, 4 * W - OVERLAP / 2 - 1e-9)).toBe(0);          // DISTILL
-    expect(sample(TRACKS.gridConverge, 5 * W - OVERLAP / 2 - 1e-9)).toBe(0);  // DECIDE
+    expect(sample(TRACKS.streamTotal, 3 * W)).toBe(0);   // DETONATE
+    expect(sample(TRACKS.pull, 4 * W)).toBe(0);          // DISTILL
+    expect(sample(TRACKS.gridConverge, 5 * W)).toBe(0);  // DECIDE
     expect(sample(TRACKS.explainOpen, 7 * W)).toBe(0);                        // EXPLAIN
   });
 
@@ -99,7 +99,7 @@ describe('the teardown timeline', () => {
     const p = (T(1).e + T(2).s) / 2;
     expect(p).toBeLessThan(T(1).e);
     expect(p).toBeGreaterThan(T(2).s);
-    expect(sample(TRACKS.shellFill, p)).toBeGreaterThan(0.15); // X-RAY is still dimming the shell...
+    expect(sample(TRACKS.shellFill, p)).toBeLessThan(0.15);    // the shell has finished X-RAY's dimming and is fading to EXPLODE's envelope...
     expect(sample(TRACKS.slabsGap, p)).toBeGreaterThan(0);    // while the lift has begun
     // DETONATE's stream is arriving while EXPLODE's lift is finishing
     const q = (T(2).e + T(3).s) / 2;

@@ -164,6 +164,46 @@ test('0 idle frames inside every hero hold, however the visitor arrived', async 
   }
 });
 
+test('the WebKit ghost: a layer that is logically absent is exactly zero AND visibility:hidden, in every hold', async ({ page }) => {
+  await ready(page);
+  // an element is "absent" when its opacity is under the terminal-zero threshold; none may be left visible, and none may sit in the
+  // 0 < opacity < 0.004 sliver (that is what painted a faint "21 API calls" at the EXPLODE dwell)
+  const audit = () => page.locator('.td-stage').evaluate((s) => {
+    const bad: string[] = [];
+    for (const e of s.querySelectorAll<HTMLElement>('.td-world *, .td-sha, .td-head')) {
+      const o = e.style.opacity; if (o === '') continue;
+      const v = +o;
+      if (v > 0 && v < 0.004) bad.push(`${e.className}: sliver opacity ${o}`);
+      if (v < 0.004 && e.style.visibility !== 'hidden') bad.push(`${e.className}: opacity ${o} but visible`);
+      if (v >= 0.004 && e.style.visibility === 'hidden') bad.push(`${e.className}: opacity ${o} but hidden`);
+    }
+    return bad;
+  });
+  for (const name of ['sealed', 'xray', 'explode', 'detonate', 'distill', 'verdict', 'explain', 'map']) {
+    await hold(page, name, 0.5);
+    expect(await audit(), name).toEqual([]);
+  }
+  await hold(page, 'explode', 0.5);
+  const total = page.locator('.td-total');
+  expect(await total.evaluate((e) => (e as HTMLElement).style.opacity)).toBe('0');                       // not a sliver: exactly zero
+  expect(await total.evaluate((e) => getComputedStyle(e).visibility)).toBe('hidden');
+  expect(await total.textContent()).toBe('0 API calls');                                                 // and it is not holding a stale number from a faster pass
+  // it comes back the moment it starts to fade in
+  await hold(page, 'detonate', 0.5);
+  expect(await total.evaluate((e) => getComputedStyle(e).visibility)).toBe('visible');
+  expect(await total.evaluate((e) => +(e as HTMLElement).style.opacity)).toBe(1);
+});
+
+test('scrubbing past DETONATE and back leaves no stale layer in the EXPLODE hold', async ({ page }) => {
+  await ready(page);
+  await hold(page, 'detonate', 0.5);
+  await hold(page, 'xray', 0.5);
+  await hold(page, 'explode', 0.5);
+  expect(await page.locator('.td-total').evaluate((e) => (e as HTMLElement).style.opacity)).toBe('0');
+  expect(await page.locator('.td-total').textContent()).toBe('0 API calls');
+  expect(await page.locator('.td-proc').evaluateAll((els) => els.every((e) => getComputedStyle(e).visibility === 'hidden'))).toBe(true);
+});
+
 test.describe('mobile dwell profile', () => {
   test.use({ viewport: { width: 390, height: 800 }, hasTouch: true, isMobile: true });
 

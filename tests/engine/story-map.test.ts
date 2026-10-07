@@ -173,6 +173,36 @@ describe('each held frame is a finished frame', () => {
   });
 });
 
+describe('a held frame holds nothing from the NEXT state (the WebKit ghost: a faint "21 API calls" at the EXPLODE dwell)', () => {
+  // Layers that belong to later states must be EXACTLY zero while an earlier state is held, not merely invisible: a 15% overlap
+  // used to start DETONATE's stream and counter inside the EXPLODE hold, leaving them at 0.6% opacity.
+  const at = (n: string) => teardownState(storyProgress(holdRange(n, false)[0] + 1e-9, false).p);
+  const later = (l: Layers, keys: string[]) => keys.map((k) => [k, k.split('.').reduce((o: any, p) => o[p], l)] as const);
+  const STREAM = ['stream.opacity', 'stream.total', 'points.opacity', 'procs.grow', 'procs.opacity'];
+  const DISTILL = ['pull', 'grid.opacity', 'grid.assemble', 'grid.converge', 'model.opacity'];
+  const END = ['verdict.opacity', 'verdict.dock', 'explain.open', 'explain.opacity', 'explain.bars', 'map.grow', 'chain.opacity'];
+  const EXPLODE = ['slabs.gap', 'slabs.explode', 'slabs.labels', 'rail', 'leader'];
+
+  it('SEALED, X-RAY and EXPLODE hold none of what follows', () => {
+    for (const [n, keys] of [['sealed', [...EXPLODE, ...STREAM, ...DISTILL, ...END, 'scan']], ['xray', [...EXPLODE, ...STREAM, ...DISTILL, ...END]], ['explode', [...STREAM, ...DISTILL, ...END]]] as const)
+      for (const [k, v] of later(at(n), [...keys])) expect(v, `${n}: ${k}`).toBe(0);
+  });
+  it('DETONATE and DISTILL hold none of what follows', () => {
+    for (const [n, keys] of [['detonate', [...DISTILL, ...END]], ['distill', ['grid.converge', 'model.opacity', ...END]]] as const)
+      for (const [k, v] of later(at(n), [...keys])) expect(v, `${n}: ${k}`).toBe(0);
+  });
+  it('VERDICT, EXPLAIN and MAP hold none of what follows', () => {
+    for (const [n, keys] of [['verdict', ['verdict.dock', 'explain.open', 'explain.opacity', 'explain.bars', 'map.grow', 'chain.opacity']], ['explain', ['map.grow', 'chain.opacity']], ['map', ['chain.opacity']]] as const)
+      for (const [k, v] of later(at(n), [...keys])) expect(v, `${n}: ${k}`).toBe(0);
+  });
+  it('and a layer that is absent in a held frame is exactly zero everywhere in the hold, so nothing can show through', () => {
+    for (const mobile of [false, true]) {
+      const [a, b] = holdRange('explode', mobile);
+      for (let i = 0; i <= 50; i++) for (const [k, v] of later(teardownState(storyProgress(a + ((b - a) * i) / 50, mobile).p), STREAM)) expect(v, k).toBe(0);
+    }
+  });
+});
+
 describe('EXPLODE geometry is identical at the start, middle and end of its dwell', () => {
   it('every layer, and the hold-local position goes 0 -> 1', () => {
     for (const mobile of [false, true]) {

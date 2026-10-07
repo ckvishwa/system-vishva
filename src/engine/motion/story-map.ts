@@ -13,7 +13,7 @@
  * One move is not continuous: after the VERDICT hold, progress goes from 6.2 to 7 states. Nothing moves anywhere in that range (the
  * stillness), so the picture does not change, and the label only advances when EXPLAIN actually starts. A test asserts it.
  */
-import { W } from './teardown-state';
+import { W } from './teardown-core';
 
 /** [from, to, viewports on desktop, viewports under 720px]. A hold has from === to. */
 export type Seg = readonly [from: number, to: number, desktop: number, mobile: number];
@@ -43,7 +43,8 @@ export const SEGS: readonly Seg[] = [
 
 const col = (mobile: boolean) => (mobile ? 3 : 2);
 /** Scroll length of the story in viewports (the stage is this plus one tall). */
-export const storyLength = (mobile: boolean) => SEGS.reduce((n, s) => n + s[col(mobile)], 0);
+const TOTAL = [2, 3].map((c) => SEGS.reduce((n, s) => n + s[c], 0));
+export const storyLength = (mobile: boolean) => TOTAL[+mobile];
 
 /** Raw scroll progress (0..1 through the sticky stage) to the progress the timeline is drawn at. */
 export function storyProgress(raw: number, mobile: boolean): number {

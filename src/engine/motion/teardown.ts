@@ -13,9 +13,10 @@ import { scheduler } from '../scheduler';
 import { trackScroll } from '../input/scroll';
 import { trackGyro } from '../input/gyro';
 import { springStep, settled, type Spring } from './spring';
-import { teardownState, stageProgress, slabHeights, barLengths, STATES, type Layers } from './teardown-state';
+import { layersFrom, stageProgress, slabHeights, barLengths, STATES, type Layers } from './teardown-core';
+import type { Key } from './keyframes';
 import { storyProgress, storyLength } from './story-map';
-import { allocate, assign, flightPos, pointPos, type Flight, type Pt } from './stream';
+import { allocate, flightPos, pointPos, type Flight, type Pt } from './stream';
 import { SPREAD, slabTransform, slabPoint, bands, labelSpot } from './explode';
 
 type R = { x: number; y: number; w: number; h: number };
@@ -23,13 +24,14 @@ type Geo = { W: number; H: number; mobile: boolean; pad: number; stack: R; proc:
 type Layer = { place(g: Geo): void; apply(l: Layers): void };
 
 const ID = 'teardown';
-const num = new Intl.NumberFormat('en-US');
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
-/** translate3d, then rotations and scale as given. */
-const tr = (e: HTMLElement, x: number, y: number, s = 1, sy = s, z = 0, rot = '') => { e.style.transform = `translate3d(${x}px,${y}px,${z}px)${rot}${s === 1 && sy === 1 ? '' : ` scale(${s},${sy})`}`; };
+/** translate3d, then an optional scale. */
+const tr = (e: HTMLElement, x: number, y: number, s = 1, sy = s) => { e.style.transform = `translate3d(${x}px,${y}px,0)${s === 1 && sy === 1 ? '' : ` scale(${s},${sy})`}`; };
 const box = (e: HTMLElement, w: number, h?: number) => { e.style.width = `${w}px`; if (h !== undefined) e.style.height = `${h}px`; };
-const op = (e: HTMLElement, v: number) => { e.style.opacity = String(v); };
+/** Opacity drives the fades; at the terminal zero the element is also visibility:hidden (never display:none), so no browser can paint a ghost of an absent layer. */
+const op = (e: HTMLElement, v: number) => { e.style.opacity = String(v); e.style.visibility = v < 0.004 ? 'hidden' : ''; };
+const lab = (text: string, parent: Element, extra = '') => el('p', `td-lab mono${extra}`, text, parent);
 const el = (tag: string, cls: string, text?: string, parent?: Element) => {
   const e = document.createElement(tag);
   e.className = cls;
@@ -42,7 +44,7 @@ export function initTeardown(root: HTMLElement): () => void {
   // ---- the payload: everything the stage shows, built by Teardown.astro from the same data as the static document
   const D = JSON.parse(root.dataset.td!) as {
     f: { z: number; h: string }; t: string; a: string; s?: { l: string; e: number; z: number; o?: number }[]; ln: number; ap?: number[]; tot?: number; np?: number;
-    d?: number; st?: number; sn: string[]; dl: string; sl: string; m?: string; v: string; vs: string; sh: { l: string; v: number }[]; sc: string; tg?: [string, string][]; ch?: [string, string][];
+    d?: number; st?: number; sn: string[]; dl: string; sl: string; m?: string; v: string; vs: string; sh: { l: string; v: number }[]; sc: string; tg?: [string, string][]; ch?: [string, string][]; k: Record<string, Key[]>;
   };
   const { f: file, s: secs = [], ap: apis = [], tot: total = null, np: procs = 0, v: verdict, sh: shap, tg: tags = [], ch: stages = [] } = D;
   const dyn = D.d ?? 0, stat = D.st ?? 0, sha = file.h;
@@ -50,7 +52,7 @@ export function initTeardown(root: HTMLElement): () => void {
   // ---- build the stage: a world the camera moves (and whose perspective the slabs share), and a HUD that stays put
   const track = el('div', 'td-track');
   const stage = el('div', 'td-stage', undefined, track);
-  stage.setAttribute('aria-hidden', 'true');
+  stage.ariaHidden = 'true';
   const world = el('div', 'td-world', undefined, stage);
   const headEl = el('p', 'td-head mono', '', stage);
   const title = el('p', 'td-title mono', D.t, stage);
@@ -73,7 +75,7 @@ export function initTeardown(root: HTMLElement): () => void {
       const e = el('div', 'td-slab', undefined, g);
       el('i', 'td-fill', undefined, e).style.opacity = String(Math.min(1, s.e / 8) * 0.3); // fill density follows entropy
       // the annotation (s.l) was composed from real data only: a line exists only when the data has it
-      return { e, lab: el('p', 'td-lab mono', s.l, world), h: 0, top: 0, b: { y: 0, h: 0 } };
+      return { e, lab: lab(s.l, world), h: 0, top: 0, y0: 0, r: 0 }; // y0, r: where the band sits in the shell, and its height relative to the slab's own
     });
     layers.push({
       place(geo) {
@@ -81,21 +83,19 @@ export function initTeardown(root: HTMLElement): () => void {
         XM = m; XL = r.x; XW = r.w; XH = Math.min(r.h, r.w * 1.2); XT = r.y + (r.h - XH) / 2; XB = r.y + r.h; XZ = (m ? SPREAD.mobile : SPREAD.desktop).z * 1.1;
         const gp = (r.h - hs.reduce((a, b) => a + b, 0)) / Math.max(1, items.length - 1), bd = bands(secs.map((s) => ({ size: s.z, offset: s.o })), file.z, XH).bands;
         let y = r.y;
-        items.forEach((it, i) => { it.h = hs[i]; it.top = y + gp * i; it.b = bd[i]; y += hs[i]; box(it.e, r.w, hs[i]); });
+        items.forEach((it, i) => { it.h = hs[i]; it.top = y + gp * i; it.y0 = XT + bd[i].y; it.r = bd[i].h / hs[i]; y += hs[i]; box(it.e, r.w, hs[i]); });
         XG = items.slice(1).map((it, i) => (items[i].top + items[i].h + it.top) / 2);
         XLW = m ? Math.min(250, geo.W * 0.62) : 210; XLH = D.ln * 14 + 4;
         items.forEach((it, i) => { box(it.lab, XLW); it.lab.style.textAlign = i % 2 ? 'right' : 'left'; });
         box(shell, r.w, XH); tr(shell, r.x, XT);
       },
       apply(l) {
-        const sp = XM ? SPREAD.mobile : SPREAD.desktop, f = l.pull, o = { x: stageW / 2, y: stageH / 2 };
+        const sp = XM ? SPREAD.mobile : SPREAD.desktop, f = l.pull, flat = lerp(1, 0.03, f), x0 = lerp(XL, cx - XW / 2, f), o = { x: stageW / 2, y: stageH / 2 };
         op(shell, l.shell.edge); shell.style.setProperty('--f', String(l.shell.fill * 0.3 / Math.max(l.shell.edge, 0.01))); // the fill is the shell's ::before, so it divides out the edge opacity it inherits
         items.forEach((it, i) => {
-          const tf = slabTransform(i, items.length, l.slabs.explode, sp), flat = lerp(1, 0.03, f), s0 = lerp(it.b.h / it.h, 1, l.slabs.gap);
-          const H = it.h * s0 * flat;
-          const top = lerp(lerp(XT + it.b.y, it.top, l.slabs.gap) + (it.h * s0 * (1 - flat)) / 2, cy, f); // band -> lifted -> flattened toward the centre
-          const dd = (i + 1) / items.length, x0 = lerp(XL, cx - XW / 2, f);
-          tr(it.e, x0 + tf.x + dx * dd, top + H / 2 - it.h / 2 + dy * dd, 1, s0 * flat, tf.z, ` rotateX(${tf.rx}deg) rotateY(${tf.ry}deg)`); // slabs resize with scaleY, never height
+          const tf = slabTransform(i, items.length, l.slabs.explode, sp), s0 = lerp(it.r, 1, l.slabs.gap), h = it.h * s0, H = h * flat;
+          const top = lerp(lerp(it.y0, it.top, l.slabs.gap) + (h - H) / 2, cy, f), dd = (i + 1) / items.length; // band -> lifted -> flattened toward the centre
+          it.e.style.transform = `translate3d(${x0 + tf.x + dx * dd}px,${top + H / 2 - it.h / 2 + dy * dd}px,${tf.z}px) rotateX(${tf.rx}deg) rotateY(${tf.ry}deg) scale(1,${s0 * flat})`; // slabs resize with scaleY, never height
           op(it.e, l.slabs.opacity);
           XA[i] = slabPoint({ x: (i % 2 ? 1 : -1) * (XW / 2), y: 0 }, { x: x0 + XW / 2, y: top + H / 2 }, tf, o);
           const sp2 = XS[i] = labelSpot(i, XA[i], top + H, stageW, XM ? 16 : 24, XM, XLW, XLH);
@@ -111,7 +111,7 @@ export function initTeardown(root: HTMLElement): () => void {
     const g = layer();
     const totalEl = total !== null ? el('p', 'td-total mono', '', g) : null;
     const ns = Array.from({ length: procs }, () => el('i', 'td-proc', undefined, g));
-    const pcap = procs ? el('p', 'td-lab mono', `${procs} processes`, g) : null;
+    const pcap = procs ? lab(`${procs} processes`, g) : null;
     let pos: [number, number][] = [], shownTotal = -1;
     layers.push({
       place(geo) {
@@ -123,7 +123,7 @@ export function initTeardown(root: HTMLElement): () => void {
         if (totalEl) { box(totalEl, tw); tr(totalEl, geo.pad, geo.mobile ? XB + 76 : geo.H - 92); }
       },
       apply(l) {
-        if (totalEl) { op(totalEl, l.stream.opacity); const v = Math.round(total! * l.stream.total); if (v !== shownTotal) { shownTotal = v; totalEl.textContent = `${num.format(v)} API calls`; } } // only when the integer changes
+        if (totalEl) { op(totalEl, l.stream.opacity); const v = Math.round(total! * l.stream.total); if (v !== shownTotal) { shownTotal = v; totalEl.textContent = `${v.toLocaleString('en-US')} API calls`; } } // only when the integer changes
         if (pcap) op(pcap, l.procs.opacity);
         ns.forEach((e, i) => { op(e, l.procs.opacity); tr(e, lerp(pos[i][0], cx, l.pull), lerp(pos[i][1], cy, l.pull), clamp(l.procs.grow * procs - i)); });
       },
@@ -134,7 +134,7 @@ export function initTeardown(root: HTMLElement): () => void {
   if (cells.length) {
     const g = layer();
     cells.forEach((c) => { c.e = el('i', `td-cell${c.i >= dyn ? ' is-static' : ''}`, undefined, g); if (c.i >= dyn) c.e.title = D.sn[c.i - dyn] ?? ''; });
-    const lab1 = el('p', 'td-lab mono', `${D.dl}  +  ${D.sl}`, g);
+    const lab1 = lab(`${D.dl}  +  ${D.sl}`, g);
     const mdl = el('p', 'td-model mono', D.m ?? 'model', world);
     let pos: [number, number][] = [], size = 0, from: [number, number] = [0, 0];
     layers.push({
@@ -168,9 +168,9 @@ export function initTeardown(root: HTMLElement): () => void {
   const ctx = cv?.getContext('2d') ?? null;
   if (cv && ctx) {
     stage.prepend(cv);
-    const { lane, cell } = apis.length && cells.length ? assign(allocate(apis), cells.length) : { lane: [], cell: [] };
+    const lane = cells.length ? allocate(apis).flatMap((n, k) => Array<number>(n).fill(k)) : []; // one lane per point, its API's share; the cell is j % 54
     const css = getComputedStyle(root);
-    const [info, rule] = ['--c-info', '--c-muted'].map((v) => css.getPropertyValue(v).trim() || '#888'); // read once, never inside a frame
+    const [info, rule] = ['--c-info', '--c-muted'].map((v) => css.getPropertyValue(v)); // read once, never inside a frame
     let size = 0, dpr = 1;
     layers.push({
       place(geo) {
@@ -205,7 +205,7 @@ export function initTeardown(root: HTMLElement): () => void {
           const fl: Flight = { x0: XL, x1: XL + XW, gaps: XG.length ? XG : [cy], o: { x: stageW / 2, y: stageH / 2 }, zr: XZ, lanes: apis.length };
           const flow = drawn * 15; // the stream's motion is the scroll position: it runs through a held frame while the visitor scrolls, and stops when they stop
           for (let j = 0; j < lane.length; j++) {
-            const f = flightPos(j, lane[j], fl, flow), [x, y] = pointPos([f.x, f.y], cellPos[cell[j]], mid, l.grid.assemble, l.grid.converge), q = size * lerp(f.s, 1, l.grid.assemble);
+            const f = flightPos(j, lane[j], fl, flow), [x, y] = pointPos([f.x, f.y], cellPos[j % cells.length], mid, l.grid.assemble, l.grid.converge), q = size * lerp(f.s, 1, l.grid.assemble);
             ctx.fillRect(x - q / 2, y - q / 2, q, q);
           }
         }
@@ -217,7 +217,7 @@ export function initTeardown(root: HTMLElement): () => void {
     const g = layer();
     const blk = el('p', 'td-verdict', verdict, g);
     const bar = el('i', 'td-redact', undefined, g);
-    const note = el('p', 'td-lab mono muted', D.vs, g);
+    const note = lab(D.vs, g, ' muted');
     let c: [number, number] = [0, 0], d: [number, number] = [0, 0], w = 0;
     layers.push({
       place(geo) {
@@ -241,8 +241,8 @@ export function initTeardown(root: HTMLElement): () => void {
   // these techniques belong to more than one tactic, so grouping by tactic would be a guess).
   if (shap.length) {
     const g = layer();
-    const rows = shap.map((s) => ({ s, lab: el('p', 'td-lab mono', s.l, g), bar: el('i', `td-push ${s.v > 0 ? 'is-risk' : 'is-ok'}`, undefined, g) }));
-    const cap = el('p', 'td-lab mono muted', D.sc, g);
+    const rows = shap.map((s) => ({ s, lab: lab(s.l, g), bar: el('i', `td-push ${s.v > 0 ? 'is-risk' : 'is-ok'}`, undefined, g) }));
+    const cap = lab(D.sc, g, ' muted');
     layers.push({
       place(geo) {
         const r = geo.main, lw = geo.mobile ? r.w : Math.min(230, r.w * 0.42), half = (r.w - (geo.mobile ? 0 : lw)) / 2;
@@ -267,7 +267,7 @@ export function initTeardown(root: HTMLElement): () => void {
 
   if (tags.length) {
     const g = layer();
-    const els = tags.map(([id, href]) => { const a = el('a', 'td-tag mono', id, g) as HTMLAnchorElement; a.href = href; a.tabIndex = -1; a.target = '_blank'; a.rel = 'noopener'; return a; });
+    const els = tags.map(([id, href]) => Object.assign(el('a', 'td-tag mono', id, g), { href, tabIndex: -1, target: '_blank', rel: 'noopener' }));
     let pts: [number, number][] = [];
     layers.push({
       place(geo) {
@@ -331,8 +331,8 @@ export function initTeardown(root: HTMLElement): () => void {
     if (p === drawn) return;
     drawn = p;
     stage.dataset.r = p.toFixed(4); // scroll progress as drawn: tests wait for the glide to land on it
-    const l = teardownState(storyProgress(p, mob));
-    if (l.index !== shown) { shown = l.index; headEl.textContent = `${D.a} · ${String(shown).padStart(2, '0')} ${STATES[shown].name} · ${STATES[shown].meaning}`; }
+    const l = layersFrom(storyProgress(p, mob), D.k);
+    if (l.index !== shown) { shown = l.index; headEl.textContent = `${D.a} · 0${shown} ${STATES[shown].name} · ${STATES[shown].meaning}`; }
     world.style.transform = `translate3d(0,${l.cam.y * stageH}px,0) scale(${l.cam.scale})`; // the camera
     // the hash settles character by character, left to right; the rest still scrambles until its turn
     const k = Math.floor(l.hash.settle * sha.length);

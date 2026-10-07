@@ -48,7 +48,7 @@ describe('teardownState: the 9 states', () => {
   });
 
   it('X-RAY: the SAME object turns semi-transparent and the sections appear inside it, with nothing separated', () => {
-    const e = teardownState(T(1).e);
+    const e = teardownState(1.95 * W);
     near(e.shell.fill, 0.15);                         // the shell is still there, now translucent
     expect(e.shell.edge).toBeGreaterThan(0.35);
     expect(e.slabs.opacity).toBe(1);                  // the sections are visible inside it
