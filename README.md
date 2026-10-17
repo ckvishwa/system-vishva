@@ -38,6 +38,20 @@ npm run check:headers # security headers vs the built HTML
 npm run csp:update    # recompute the CSP hash after the inline tier script changes
 ```
 
+## Hero glyph portrait
+
+The hero's glyph portrait is pre-computed once, offline — it does not run on every build, and never
+decodes an image at request time. When the source photo changes:
+
+```bash
+pip install pillow numpy
+python3 scripts/build-glyph-portrait.py path/to/photo.jpg --out-dir public/glyph --preview
+```
+
+This writes `public/glyph/glyph-portrait.{json,css,txt}` — commit those three files. `src/components/ui/GlyphPortrait.astro`
+reads the JSON at build time and renders the grid as real markup (one `<span>` per cell); if the files are absent, the
+layer renders nothing rather than a placeholder. `.txt` is a plain-text preview to eyeball the result before committing it.
+
 ## How the gate works
 
 `npm run gate` is the only command a deployment builds with (`vercel.json` sets it as the build command, and CI runs it too):

@@ -1,21 +1,26 @@
 /**
- * Heading decrypt (meaning: change of state). On first view the characters of a heading marked data-fx="decrypt" (an H1) resolve from random
- * glyphs into the real text, left to right, in at most 500 ms, once per element. Never on body text,
- * never on hover. Runs on the shared scheduler.
+ * Decode (meaning: change of state). On first view the characters of any element marked
+ * data-fx="decrypt" resolve from random glyphs into the real text, left to right, in at most
+ * MAX_MS (override per element with data-fx-ms), once per element. Used on the hero H1, section H2s
+ * and the homepage's achievement numbers (decode instead of count-up) — never on body text, never on
+ * hover. Runs on the shared scheduler, one subscription for every active run on the page.
  *
- * Accessibility: the H1 carries aria-label with the real text and the scrambled spans are
+ * Accessibility: the element carries aria-label with the real text and the scrambled spans are
  * aria-hidden. Each glyph sits in a span fixed to the width of the character it will become, so the
  * layout never shifts. When it finishes, the original nodes are put back untouched.
  */
 import { scheduler } from '../scheduler';
 import { onceVisible } from '../input/visibility';
+import { cue } from '../cue';
 
 export const GLYPHS = '0123456789ABCDEF─│┌┐└┘├┤┬┴┼';
 export const MAX_MS = 500;
 const HOLD_MS = 120; // how long the last character keeps scrambling before it resolves
 
-/** Time at which character i of n resolves. Strictly left to right, never later than MAX_MS. */
-export const resolveAt = (i: number, n: number) => (n <= 1 ? 0 : (i / (n - 1)) * (MAX_MS - HOLD_MS)) + HOLD_MS;
+/** Time at which character i of n resolves. Strictly left to right, never later than maxMs.
+ *  maxMs is per-call (an element can override MAX_MS via data-fx-ms) so one shared loop still
+ *  serves a hero heading and a short metric chip at different settle speeds. */
+export const resolveAt = (i: number, n: number, maxMs = MAX_MS) => (n <= 1 ? 0 : (i / (n - 1)) * (maxMs - HOLD_MS)) + HOLD_MS;
 
 export const pick = (rand: () => number = Math.random) => GLYPHS[Math.floor(rand() * GLYPHS.length)];
 
@@ -31,6 +36,7 @@ function widthOf(node: Text, i: number, range: Range): number {
 function arm(el: HTMLElement): Run | null {
   const text = el.textContent?.trim();
   if (!text) return null;
+  const maxMs = Number(el.dataset.fxMs) || MAX_MS;
   const original = [...el.childNodes];
   const range = document.createRange();
   const total = [...text.replace(/\s/g, '')].length;
@@ -53,7 +59,7 @@ function arm(el: HTMLElement): Run | null {
         span.style.cssText = `display:inline-block;text-align:center;clip-path:inset(0);width:${widthOf(node as Text, i, range)}px`;
         span.textContent = ch;
         word.append(span);
-        cells.push({ span, ch, at: resolveAt(n++, total) });
+        cells.push({ span, ch, at: resolveAt(n++, total, maxMs) });
         i += ch.length;
       }
       frag.append(word);
@@ -70,7 +76,12 @@ export function initDecrypt(root: ParentNode = document): () => void {
   const runs = new Set<Run>();
   const offs: Array<() => void> = [];
 
-  const finish = (r: Run) => { r.el.replaceChildren(...r.original); r.el.removeAttribute('aria-label'); runs.delete(r); };
+  const finish = (r: Run) => {
+    r.el.replaceChildren(...r.original);
+    r.el.removeAttribute('aria-label');
+    runs.delete(r);
+    if (r.el.dataset.fxSound === 'tick') cue('tick'); // "achievement number settles"
+  };
 
   sched.add('decrypt', (dt) => {
     runs.forEach((r) => {
@@ -90,7 +101,11 @@ export function initDecrypt(root: ParentNode = document): () => void {
   root.querySelectorAll<HTMLElement>('[data-fx~="decrypt"]').forEach((h) => {
     offs.push(onceVisible(h, () => {
       const r = arm(h);
-      if (r) { runs.add(r); sched.invalidate('decrypt'); }
+      if (!r) return;
+      runs.add(r);
+      sched.invalidate('decrypt');
+      if (h.dataset.fxSound !== 'tick') cue('decode'); // a settling number plays only its own 'tick', not the generic decode texture
+      if (h.tagName === 'H2') cue('enter'); // "section becomes active" — a section heading decoding is exactly that moment
     }));
   });
 

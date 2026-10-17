@@ -85,9 +85,10 @@ export function mountHero(root: HTMLElement, tier: Tier): () => void {
     } else start();
   }
 
+  const idle = (cb: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(cb, { timeout: 600 }) : setTimeout(cb, 200));
+
   // Three.js loads after first paint, never before (ARD L-03).
   const load = () => {
-    const idle = (cb: () => void) => ('requestIdleCallback' in window ? requestIdleCallback(cb, { timeout: 600 }) : setTimeout(cb, 200));
     idle(async () => {
       if (disposed) return;
       try {
@@ -106,6 +107,19 @@ export function mountHero(root: HTMLElement, tier: Tier): () => void {
   if (document.readyState === 'complete') load();
   else addEventListener('load', load, { once: true });
   offs.push(() => removeEventListener('load', load));
+
+  // Hero layer B's pointer-resolve behaviour. Independent of the scene load above: one failing never
+  // blocks the other. The SSR'd portrait already renders without this; it only turns the grid interactive.
+  idle(async () => {
+    if (disposed) return;
+    try {
+      const { mountGlyph } = await import('./glyph');
+      if (disposed) return;
+      offs.push(mountGlyph(root));
+    } catch {
+      /* the SSR'd resolved portrait is the fallback, not an error */
+    }
+  });
 
   return () => {
     disposed = true;

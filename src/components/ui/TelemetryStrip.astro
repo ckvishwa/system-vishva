@@ -1,6 +1,8 @@
 ---
 // Homepage telemetry strip (Phase 1.5): one row of Cells straight from build.json, one link to /status.
-// Cells whose data is missing are left out, never faked. No animation beyond the shared count-up.
+// Cells whose data is missing are left out, never faked. The achievement numbers decode (fx/decrypt)
+// rather than count up — the same shared effect as the hero heading, triggered the same way (onceVisible),
+// so this component no longer needs its own visibility wiring or a count-up import.
 import Cell from './Cell.astro';
 import build from '../../generated/build.json';
 const checks = build.gates ?? [];
@@ -10,18 +12,8 @@ const passing = checks.filter((g: any) => g.status === 'pass').length;
   <div class="cells">
     <Cell label="Commit" value={build.commit} />
     <Cell label="Gate" value={`${passing}/${checks.length} checks`} status={build.gate === 'pass' ? 'pass' : 'block'} chip={build.gate === 'pass' ? 'PASS' : 'BLOCK'} />
-    <Cell label="Pages built" value={String(build.pages)} count={build.pages} />
-    {build.tests && <Cell label="Tests passing" value={`${build.tests.passed}/${build.tests.total}`} count={build.tests.passed} />}
+    <Cell label="Pages built" value={String(build.pages)} decode />
+    {build.tests && <Cell label="Tests passing" value={`${build.tests.passed}/${build.tests.total}`} decode />}
     {build.js && <Cell label="JS pre-LCP, gz" value={`${build.js.preLcpKb} kB`} />}
   </div>
 </a>
-<script>
-  import { onceVisible } from '../../engine/input/visibility';
-  import { countUp } from '../../engine/motion/count';
-  // The final text is already in the HTML; this only plays the existing count-up once, when the strip is seen.
-  const run = () => {
-    const strip = document.querySelector<HTMLElement>('[data-strip]');
-    if (strip) onceVisible(strip, () => strip.querySelectorAll<HTMLElement>('[data-count]').forEach(countUp));
-  };
-  document.addEventListener('astro:page-load', run);
-</script>

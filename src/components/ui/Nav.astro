@@ -13,20 +13,45 @@ const path = Astro.url.pathname;
     <a href="/" class="mark mono">VISHVA.OS</a>
     <nav aria-label="Primary">
       <ul>
-        {links.map((l) => <li><a href={l.href} aria-current={path.startsWith(l.href) ? 'page' : undefined}>{l.label}</a></li>)}
-        <li><button type="button" class="term-open" data-terminal-open aria-haspopup="dialog" title="Open the terminal (press / on a keyboard)">Terminal</button></li>
-        <li><a href="/plain/" class="mono muted" title="No motion, single column, print-ready">Plain</a></li>
+        {links.map((l) => <li><a href={l.href} data-sound="click" aria-current={path.startsWith(l.href) ? 'page' : undefined}>{l.label}</a></li>)}
+        <li><button type="button" class="term-open" data-terminal-open data-sound="click" aria-haspopup="dialog" title="Open the terminal (press / on a keyboard)">Terminal</button></li>
+        <li><button type="button" class="sound-toggle mono" data-sound-toggle aria-pressed="false">Sound: off</button></li>
+        <li><a href="/plain/" class="mono muted" data-sound="click" title="No motion, single column, print-ready">Plain</a></li>
       </ul>
     </nav>
   </div>
+  <p id="sound-reason" class="visually-hidden">Disabled: this device prefers reduced motion.</p>
 </header>
+<script>
+  // Eager, tiny: see src/engine/sound-toggle.ts for why the real synthesis engine stays lazy.
+  import { initSoundToggle } from '../../engine/sound-toggle';
+  import { cue } from '../../engine/cue';
+
+  const btn = document.querySelector<HTMLButtonElement>('[data-sound-toggle]');
+  if (btn) initSoundToggle(btn, 'sound-reason');
+
+  // One delegated listener covers nav links/buttons and, on the homepage, the hero graph nodes —
+  // "click: nav and node activation" (ARD: effects never add their own pointer listener; this isn't
+  // one — it's a plain click delegate for sound feedback, nothing tracks position or motion).
+  document.addEventListener('click', (e) => { if ((e.target as Element).closest('[data-sound="click"]')) cue('click'); });
+</script>
 <style>
   .nav { position: sticky; top: 0; z-index: var(--z-nav); background: color-mix(in srgb, var(--c-bg) 88%, transparent); border-bottom: 1px solid var(--c-rule); backdrop-filter: blur(6px); }
   .row { display: flex; justify-content: space-between; align-items: center; height: 56px; gap: var(--s-4); }
+  /* Flex items default to min-width:auto, which lets their content push .row wider than the viewport
+     instead of letting `ul { overflow-x: auto }` actually engage. One extra nav item (the sound
+     toggle) was enough to cross that line at 360px. */
+  nav { min-width: 0; }
   .mark { font-size: var(--t-sm); font-weight: 600; }
-  ul { display: flex; gap: clamp(12px, 2.5vw, 32px); list-style: none; font-size: var(--t-sm); overflow-x: auto; }
+  ul { display: flex; align-items: center; gap: clamp(12px, 2.5vw, 32px); list-style: none; font-size: var(--t-sm); overflow-x: auto; }
+  /* WCAG 2.2 AA 2.5.8: each link's own hit box, not just the row around it, must clear 24px. */
+  nav li a, .term-open { display: flex; align-items: center; padding-block: var(--s-2); }
   a[aria-current='page'] { color: var(--c-system); }
-  .term-open { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+  .term-open { background: none; border: 0; font: inherit; color: inherit; cursor: pointer; }
   .term-open:hover { color: var(--c-system); }
+  .sound-toggle { background: none; border: 0; font-size: var(--t-sm); color: var(--c-muted); cursor: pointer; }
+  .sound-toggle[aria-pressed='true'] { color: var(--c-info); }
+  .sound-toggle:hover:not(:disabled) { color: var(--c-system); }
+  .sound-toggle:disabled { cursor: not-allowed; opacity: 0.5; }
   @media (max-width: 560px) { ul li:last-child { display: none; } .mark { display: none; } }
 </style>

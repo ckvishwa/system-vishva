@@ -1,0 +1,42 @@
+---
+/**
+ * Hero layer B. Reads public/glyph/glyph-portrait.json (built by scripts/build-glyph-portrait.py —
+ * see README "Hero glyph portrait") at BUILD TIME and renders the grid as real markup: one <span>
+ * per cell carrying its glyph as text and a .gl{n} opacity class from the generated stylesheet.
+ * This is the no-JS and reduced-motion state too — with JS off, this is exactly what renders, fully
+ * resolved, no blank rectangle. engine/scene/glyph.ts is the only thing that ever rewrites a cell's
+ * textContent after this, and only for tiers that already run the hero's WebGL scene.
+ *
+ * No data is invented here: if the file hasn't been generated yet, this renders nothing rather than
+ * a placeholder image or fabricated pixels.
+ */
+import { existsSync, readFileSync } from 'node:fs';
+
+interface Grid { cols: number; rows: number; levels: number; ramp: string; source?: string; cells: { chars: string; levels: string }[] }
+const JSON_PATH = 'public/glyph/glyph-portrait.json';
+const grid: Grid | null = existsSync(JSON_PATH) ? JSON.parse(readFileSync(JSON_PATH, 'utf8')) : null;
+---
+{grid && (
+  <>
+    <link rel="stylesheet" href="/glyph/glyph-portrait.css" />
+    <div class="glyph-grid mono" data-glyph aria-hidden="true">
+      {grid.cells.map((row) => (
+        <div class="gl-row">
+          {[...row.chars].map((ch, i) => <span class={`gl${row.levels[i]}`}>{ch}</span>)}
+        </div>
+      ))}
+    </div>
+    <p class="visually-hidden">Portrait, rendered as text glyphs.</p>
+  </>
+)}
+<style>
+  /* cqw sizing assumes the script's documented default (--cols 88); re-tune this one line if the
+     portrait is ever regenerated at a different width. Monospace, so every row lines up on its own —
+     no grid-template-columns, no per-cell width, nothing that would need an inline style under CSP.
+     cqw must resolve against an ANCESTOR container (.plot in HeroScene.astro): a `container-type`
+     element is the query container for its descendants, never for its own properties, so it cannot
+     be set here on the element that reads cqw. */
+  .glyph-grid { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; overflow: hidden; line-height: 1; font-size: calc(100cqw / 52); }
+  .gl-row { white-space: nowrap; text-align: center; }
+  .gl-row span { display: inline-block; color: var(--c-text); }
+</style>

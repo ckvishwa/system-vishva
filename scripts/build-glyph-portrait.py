@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""
+build-glyph-portrait.py
+
+Turns a portrait photo into a pre-computed glyph grid for the SYSTEM://VISHVA
+hero. Everything expensive happens here, at build time. At runtime the page
+only reads indices out of a JSON file, so there is no image decoding, no
+canvas, and no per-frame luminance maths.
+
+Outputs (into --out-dir):
+  glyph-portrait.json   the grid: one character + one level per cell
+  glyph-portrait.css    .gl0 .. .gl{n-1} level classes (CSP-safe, no inline styles)
+  glyph-portrait.txt    plain-text preview so you can eyeball it before wiring it up
+
+Why levels instead of inline opacity:
+  The site runs style-src 'self' with no unsafe-inline, so the renderer cannot
+  set style="opacity:.42" on 5000 spans. Each cell instead carries a class from
+  a small fixed set, and the generated stylesheet defines them.
+
+Usage:
+  python3 build-glyph-portrait.py photo.jpg --out-dir public/glyph --preview
+
+Dependencies: pillow, numpy
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+from PIL import Image, ImageOps
+
+# Dark-to-light. Index 0 is the emptiest glyph, the last index is the densest.
+# Tuned for a monospace face on a dark background: sparse glyphs read as shadow,
+# dense ones as highlight.
+DEFAULT_RAMP = " .,:;i1tfLCG08@"
+
+# A monospace cell is roughly twice as tall as it is wide. Without this the
+# portrait comes out stretched vertically.
+CELL_ASPECT = 0.5
+
+
+def load_gray(path: Path, cols: int, rows: int, autocontrast: float) -> np.ndarray:
+    """Load, grayscale, normalise contrast, resample to the glyph grid."""
+    img = Image.open(path)
+    img = ImageOps.exif_transpose(img)
+    img = img.convert("L")
+
+    if autocontrast > 0:
+        img = ImageOps.autocontrast(img, cutoff=autocontrast)
+
+    # BOX averages the pixels falling inside each cell, which is what a glyph
+    # cell actually represents. LANCZOS would sharpen and add ringing.
+    img = img.resize((cols, rows), Image.BOX)
+    return np.asarray(img, dtype=np.float32) / 255.0
+
+
+def fit_rows(path: Path, cols: int, rows: int | None) -> int:
+    if rows:
+        return rows
+    with Image.open(path) as img:
+        img = ImageOps.exif_transpose(img)
+        w, h = img.size
+    return max(1, round(cols * (h / w) * CELL_ASPECT))
+
+
+def radial_falloff(rows: int, cols: int, strength: float) -> np.ndarray:
+    """Fade the rectangle's edges so the portrait dissolves into the page."""
+    if strength <= 0:
+        return np.ones((rows, cols), dtype=np.float32)
+
+    y = np.linspace(-1.0, 1.0, rows, dtype=np.float32)[:, None]
+    x = np.linspace(-1.0, 1.0, cols, dtype=np.float32)[None, :]
+    # Elliptical distance, slightly tighter horizontally so the head stays intact.
+    d = np.sqrt((x * 1.15) ** 2 + y**2)
+    mask = np.clip(1.0 - (d - (1.0 - strength)) / max(strength, 1e-6), 0.0, 1.0)
+    return mask**1.5
+
+
+def quantise(lum: np.ndarray, levels: int) -> np.ndarray:
+    """Map 0..1 luminance onto 0..levels-1 without clipping the top bucket."""
+    idx = np.floor(lum * levels).astype(np.int32)
+    return np.clip(idx, 0, levels - 1)
+
+
+def build(args: argparse.Namespace) -> dict:
+    src = Path(args.image)
+    if not src.exists():
+        sys.exit(f"error: no such file: {src}")
+
+    rows = fit_rows(src, args.cols, args.rows)
+    lum = load_gray(src, args.cols, rows, args.autocontrast)
+
+    if args.invert:
+        lum = 1.0 - lum
+
+    if args.gamma != 1.0:
+        lum = np.power(np.clip(lum, 0.0, 1.0), args.gamma)
+
+    lum = lum * radial_falloff(rows, args.cols, args.fade_edges)
+
+    if args.floor > 0:
+        # Push near-black cells fully to empty so the background does not
+        # render thousands of faint dots.
+        lum = np.where(lum < args.floor, 0.0, lum)
+
+    ramp = args.ramp
+    char_idx = quantise(lum, len(ramp))
+    level_idx = quantise(lum, args.levels)
+
+    rows_chars = ["".join(ramp[i] for i in row) for row in char_idx]
+    # Levels are written as a digit string, one character per cell, so the JSON
+    # stays compact and the renderer can index it directly.
+    if args.levels > 36:
+        sys.exit("error: --levels must be 36 or fewer (levels are encoded as single characters)")
+    alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+    rows_levels = ["".join(alphabet[i] for i in row) for row in level_idx]
+
+    filled = int((level_idx > 0).sum())
+    total = rows * args.cols
+
+    return {
+        "cols": args.cols,
+        "rows": rows,
+        "levels": args.levels,
+        "ramp": ramp,
+        "source": src.name,
+        "cells": [{"chars": c, "levels": l} for c, l in zip(rows_chars, rows_levels)],
+        "_stats": {"total": total, "filled": filled},
+    }
+
+
+def write_css(grid: dict, path: Path, min_opacity: float, max_opacity: float) -> None:
+    levels = grid["levels"]
+    lines = [
+        "/* Generated by scripts/build-glyph-portrait.py. Do not edit by hand. */",
+        "/* One class per luminance level. Keeps the renderer free of inline",
+        "   styles so style-src 'self' holds. */",
+        "",
+    ]
+    for i in range(levels):
+        t = i / max(levels - 1, 1)
+        opacity = min_opacity + (max_opacity - min_opacity) * t
+        if i == 0:
+            lines.append(f".gl{i} {{ opacity: 0; }}")
+        else:
+            lines.append(f".gl{i} {{ opacity: {opacity:.3f}; }}")
+    lines.append("")
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def write_preview(grid: dict, path: Path, echo: bool) -> None:
+    text = "\n".join(row["chars"] for row in grid["cells"])
+    path.write_text(text + "\n", encoding="utf-8")
+    if echo:
+        print(text)
+
+
+def main() -> None:
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("image", help="source portrait (jpg/png/webp)")
+    p.add_argument("--out-dir", default="public/glyph", help="output directory (default: public/glyph)")
+    p.add_argument("--cols", type=int, default=88, help="grid width in cells (default: 88)")
+    p.add_argument("--rows", type=int, default=None, help="grid height; derived from the photo's aspect if omitted")
+    p.add_argument("--ramp", default=DEFAULT_RAMP, help="glyph ramp, sparse to dense")
+    p.add_argument("--levels", type=int, default=8, help="opacity buckets (default: 8)")
+    p.add_argument("--gamma", type=float, default=1.0, help="<1 lifts shadows, >1 deepens them (default: 1.0)")
+    p.add_argument("--autocontrast", type=float, default=1.0, help="percentile clipped at each end (default: 1.0)")
+    p.add_argument("--floor", type=float, default=0.06, help="luminance below this becomes empty (default: 0.06)")
+    p.add_argument("--fade-edges", type=float, default=0.45, help="0 disables; higher dissolves more of the frame")
+    p.add_argument("--invert", action="store_true", help="for dark subjects on light backgrounds")
+    p.add_argument("--min-opacity", type=float, default=0.14, help="opacity of the faintest visible level")
+    p.add_argument("--max-opacity", type=float, default=1.0, help="opacity of the densest level")
+    p.add_argument("--preview", action="store_true", help="also print the preview to the terminal")
+    args = p.parse_args()
+
+    grid = build(args)
+    stats = grid.pop("_stats")
+
+    out = Path(args.out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    json_path = out / "glyph-portrait.json"
+    json_path.write_text(json.dumps(grid, separators=(",", ":")), encoding="utf-8")
+    write_css(grid, out / "glyph-portrait.css", args.min_opacity, args.max_opacity)
+    write_preview(grid, out / "glyph-portrait.txt", args.preview)
+
+    kb = json_path.stat().st_size / 1024
+    print(
+        f"\n{grid['cols']}x{grid['rows']} grid, {stats['filled']}/{stats['total']} cells lit, "
+        f"{grid['levels']} levels, json {kb:.1f} kB",
+        file=sys.stderr,
+    )
+    print(f"wrote {out}/glyph-portrait.{{json,css,txt}}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()

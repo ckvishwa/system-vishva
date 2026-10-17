@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import HeroScene from '../islands/HeroScene.astro';
 import SystemRecord from '../components/ui/SystemRecord.astro';
 import TelemetryStrip from '../components/ui/TelemetryStrip.astro';
+import SessionCard from '../components/ui/SessionCard.astro';
 import { getCollection, getEntries } from 'astro:content';
 import { parse } from 'yaml';
 import principlesRaw from '../content/principles.yaml?raw';
@@ -23,14 +24,18 @@ const lab = await getCollection('lab');
       <p class="mono muted">AI systems / security / reliability</p>
       <h1 class="display" data-fx="decrypt">Vishva<br />Teja</h1>
       <p class="h2 claim" data-fx="redact">Building systems where probabilistic models don't control deterministic truth.</p>
-      <a class="mono enter hard" href="#systems">Enter the system</a>
+      <div class="actions">
+        <a class="mono enter hard" href="#systems" data-sound="click">Enter the system</a>
+        <a class="mono enter2 hard" href="/contact/" data-sound="click">Contact</a>
+      </div>
+      <SessionCard />
     </div>
   </section>
 
   <TelemetryStrip />
 
   <section id="systems" class="wrap block sec" aria-labelledby="sel">
-    <h2 id="sel" class="mono muted">Selected systems</h2>
+    <h2 id="sel" class="mono muted" data-fx="decrypt">Selected systems</h2>
     {records.map(({ w, metrics }, i) => (
       <SystemRecord index={i + 1} slug={w.id} title={w.data.title} category={w.data.category} pipeline={w.data.pipeline} metrics={metrics} signature={w.data.signature} sampleHash={w.data.sample?.sha256} />
     ))}
@@ -42,12 +47,12 @@ const lab = await getCollection('lab');
   </section>
 
   <section class="wrap block sec" aria-labelledby="ops">
-    <h2 id="ops" class="mono muted">Operating principles</h2>
+    <h2 id="ops" class="mono muted" data-fx="decrypt">Operating principles</h2>
     <ul class="principles">{principles.slice(1).map((p) => <li class="h1">{p}</li>)}</ul>
   </section>
 
   <section class="wrap block sec" aria-labelledby="labh">
-    <h2 id="labh" class="mono muted">Current lab</h2>
+    <h2 id="labh" class="mono muted" data-fx="decrypt">Current lab</h2>
     <ul class="lab mono">{lab.map((l) => <li><span>{l.data.title}</span><span class="muted">{l.data.stage}</span><span class={shownStatus(l.data.status, l.data.lastTouched) === 'active' ? 'ok' : 'muted'}>{shownStatus(l.data.status, l.data.lastTouched)}</span></li>)}</ul>
     <a class="mono" href="/lab/">Open the lab</a>
   </section>
@@ -60,8 +65,11 @@ const lab = await getCollection('lab');
   @media (max-width: 720px) { .hero-copy { width: 100%; } }
   .hero-copy .display { text-transform: uppercase; }
   .claim { max-width: 24ch; }
-  .enter { color: var(--c-system); justify-self: start; border: 1px solid var(--c-system); padding: var(--s-2) var(--s-4); }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+  .enter { color: var(--c-system); border: 1px solid var(--c-system); padding: var(--s-2) var(--s-4); }
   .enter:hover { background: var(--c-system); color: var(--c-bg); }
+  .enter2 { color: var(--c-info); border: 1px solid var(--c-info); padding: var(--s-2) var(--s-4); }
+  .enter2:hover { background: var(--c-info); color: var(--c-bg); }
   .statement { margin-top: var(--s-9); padding-block: var(--s-8); }
   .statement p { max-width: 20ch; }
   .block { padding-block: var(--s-9) 0; display: grid; gap: var(--s-5); }

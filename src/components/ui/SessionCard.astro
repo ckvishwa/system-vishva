@@ -1,0 +1,47 @@
+---
+// Hero layer C (front): treats this visit as the first event the system has logged. Every value is
+// read straight from the browser already looking at this page — nothing here is sent anywhere,
+// stored, or written to any analytics sink. It is shown once, at mount, and discarded on navigation.
+// With JS off every value stays a dash; there is nothing fabricated to show in its place.
+---
+<div class="session-card" data-session>
+  <p class="session-head mono muted">Session</p>
+  <dl class="session-facts mono">
+    <div class="row"><dt class="muted">Viewport</dt><dd data-session-viewport>—</dd></div>
+    <div class="row"><dt class="muted">Browser</dt><dd data-session-ua>—</dd></div>
+    <div class="row"><dt class="muted">Referrer</dt><dd data-session-ref>—</dd></div>
+    <div class="row"><dt class="muted">Time to render</dt><dd data-session-time>—</dd></div>
+  </dl>
+  <p class="session-verdict mono info">VERDICT · OBSERVED ONLY</p>
+  <p class="session-note mono muted">This data stays in your browser. Nothing above is sent, stored, or logged.</p>
+</div>
+<script>
+  // Read-only, once, at mount. Nothing below this line leaves the browser: no fetch, no beacon, no
+  // localStorage write, no analytics call — see the component comment above.
+  function uaFamily(ua: string): string {
+    const browser = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Unknown browser';
+    const platform = /Windows/.test(ua) ? 'Windows' : /Mac OS X/.test(ua) ? 'macOS' : /Android/.test(ua) ? 'Android' : /iPhone|iPad/.test(ua) ? 'iOS' : /Linux/.test(ua) ? 'Linux' : 'unknown platform';
+    return `${browser}, ${platform}`;
+  }
+
+  const run = () => {
+    const root = document.querySelector<HTMLElement>('[data-session]');
+    if (!root) return;
+    const set = (attr: string, v: string) => { const el = root.querySelector(`[${attr}]`); if (el) el.textContent = v; };
+    set('data-session-viewport', `${innerWidth}×${innerHeight}`);
+    set('data-session-ua', uaFamily(navigator.userAgent));
+    set('data-session-ref', document.referrer ? (() => { try { return new URL(document.referrer).hostname; } catch { return 'direct'; } })() : 'direct');
+    set('data-session-time', `${Math.round(performance.now())} ms`);
+  };
+  document.addEventListener('astro:page-load', run);
+</script>
+<style>
+  .session-card { border: 1px solid var(--c-rule); padding: var(--s-4); display: grid; gap: var(--s-3); max-width: 32ch; }
+  .session-head { font-size: var(--t-xs); letter-spacing: 0.08em; text-transform: uppercase; }
+  .session-facts { display: grid; gap: var(--s-1); font-size: var(--t-xs); }
+  .row { display: flex; justify-content: space-between; gap: var(--s-3); }
+  .row dt, .row dd { margin: 0; }
+  .row dd { text-align: right; overflow-wrap: anywhere; }
+  .session-verdict { font-size: var(--t-xs); letter-spacing: 0.04em; }
+  .session-note { font-size: 10px; }
+</style>

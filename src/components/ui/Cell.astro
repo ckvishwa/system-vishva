@@ -10,14 +10,22 @@ interface Props {
   chip?: string;
   /** numeric part for the shared count-up; the visible text is already final */
   count?: number;
+  /** homepage achievement numbers decode instead of counting up (shared fx/decrypt, not a separate effect) */
+  decode?: boolean;
   /** small mono line under the value, e.g. when it was measured */
   note?: string;
 }
-const { label, value, status, chip, count, note } = Astro.props;
+const { label, value, status, chip, count, decode, note } = Astro.props;
 const chipText = chip ?? (status === 'pass' ? 'PASS' : status === 'block' ? 'BLOCK' : undefined);
 ---
 <div class="cell" data-status={status}>
   <p class="cell-head mono"><span class="muted">{label}</span>{status && chipText && <span class="chip" data-tone={status}>{chipText}</span>}</p>
-  <p class="cell-value" data-count={count !== undefined ? '' : undefined} data-value={count}>{value}<slot /></p>
+  <p
+    class="cell-value"
+    data-count={count !== undefined ? '' : undefined}
+    data-value={count}
+    data-fx={decode ? 'decrypt' : undefined}
+    data-fx-sound={decode ? 'tick' : undefined}
+  >{value}<slot /></p>
   {note && <p class="cell-note mono muted">{note}</p>}
 </div>
