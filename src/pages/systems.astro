@@ -1,9 +1,110 @@
 ---
+// Phase 3: the systems map. Nodes/edges/positions come from systems-graph.yaml — the same data the
+// hero WebGL scene reads (ARD L-03 fallback parity) — so this page cannot drift from the hero graph.
+// Zero JS: every node is a real <a>; #row-<id> + a generic :target rule does the highlighting.
 import Base from '../layouts/Base.astro';
+import { parse } from 'yaml';
+import { getCollection } from 'astro:content';
+import '../generated/graph.css'; // node positions: .node[data-node='id'] { left; top }
+import raw from '../content/systems-graph.yaml?raw';
+
+interface Graph {
+  nodes: { id: string; label: string; x: number; y: number }[];
+  edges: [string, string][];
+  projects: Record<string, string[]>;
+}
+const g = parse(raw) as Graph;
+const pos = Object.fromEntries(g.nodes.map((n) => [n.id, n]));
+const labelOf = Object.fromEntries(g.nodes.map((n) => [n.id, n.label]));
+
+const work = (await getCollection('work', (w) => !w.data.draft)).sort((a, b) => a.data.order - b.data.order);
+const titleOf = Object.fromEntries(work.map((w) => [w.id, w.data.title]));
+
+// Which published projects use each system, in systems-graph.yaml's own node order.
+const projectsBySystem = Object.fromEntries(
+  g.nodes.map((n) => [
+    n.id,
+    Object.entries(g.projects).filter(([slug, systems]) => systems.includes(n.id) && titleOf[slug]).map(([slug]) => slug),
+  ]),
+);
 ---
 <Base title="Systems">
   <section class="wrap pad-9">
     <h1 class="display" data-fx="decrypt">Systems</h1>
-    <p class="h2 muted lede-26">Phase 3: an interactive map. Pick a system, see which projects used it.</p>
+    <p class="h2 muted lede-26">Eight systems, shared across projects. Pick one to see which projects use it.</p>
+  </section>
+
+  <section class="wrap sec sys-map-sec">
+    <div class="sys-diagram">
+      <svg class="edges" aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none">
+        {g.edges.map(([a, b]) => (
+          <line x1={pos[a].x} y1={pos[a].y} x2={pos[b].x} y2={pos[b].y} vector-effect="non-scaling-stroke" />
+        ))}
+      </svg>
+      {g.nodes.map((n) => (
+        <a class="node mono" data-node={n.id} href={`#row-${n.id}`}>{n.label}</a>
+      ))}
+    </div>
+  </section>
+
+  <section class="wrap sec">
+    <h2 class="h2">By system</h2>
+    <div class="sys-rows mono">
+      {g.nodes.map((n) => (
+        <div class="sys-row" id={`row-${n.id}`} tabindex="-1">
+          <span class="sys-row-label">{n.label}</span>
+          {projectsBySystem[n.id].length > 0 ? (
+            <ul class="tags">
+              {projectsBySystem[n.id].map((slug) => <li><a href={`/work/${slug}/`}>{titleOf[slug]}</a></li>)}
+            </ul>
+          ) : (
+            <p class="muted">No published project documents this system yet.</p>
+          )}
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section class="wrap sec pad-9">
+    <h2 class="h2">By project</h2>
+    <div class="cells">
+      {work.map((w) => (
+        <div class="cell">
+          <p class="cell-head"><a class="mono" href={`/work/${w.id}/`}>{w.data.title}</a></p>
+          {(g.projects[w.id]?.length ?? 0) > 0 ? (
+            <ul class="tags mono">
+              {g.projects[w.id].map((sid) => <li><a href={`#row-${sid}`}>{labelOf[sid] ?? sid}</a></li>)}
+            </ul>
+          ) : (
+            <p class="muted mono">No systems documented yet.</p>
+          )}
+        </div>
+      ))}
+    </div>
   </section>
 </Base>
+<style>
+  .sys-map-sec { padding-block: var(--s-7); }
+  .sys-diagram { position: relative; aspect-ratio: 16 / 9; border: 1px solid var(--c-rule); margin-top: var(--s-5); }
+  .sys-diagram .edges { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .sys-diagram .edges line { stroke: var(--c-rule); stroke-width: 1; }
+  .sys-diagram .node {
+    position: absolute; transform: translate(-50%, -50%); text-decoration: none; white-space: nowrap;
+    color: var(--c-text); background: var(--c-bg); border: 1px solid var(--c-rule); padding: var(--s-1) var(--s-2);
+  }
+  .sys-diagram .node:hover, .sys-diagram .node:focus-visible { border-color: var(--c-system); color: var(--c-system); }
+  /* Same semantic tones as the hero graph and engine/scene/graph.ts: authorization=system, security=risk. */
+  .sys-diagram .node[data-node='authorization'] { border-color: var(--c-system); color: var(--c-system); }
+  .sys-diagram .node[data-node='security'] { border-color: var(--c-risk); color: var(--c-risk); }
+  @media (max-width: 640px) {
+    .sys-diagram { position: static; aspect-ratio: auto; border: 0; display: grid; gap: var(--s-2); }
+    .sys-diagram .edges { display: none; }
+    .sys-diagram .node { position: static; transform: none; }
+  }
+
+  .sys-rows { border-top: 1px solid var(--c-rule); }
+  .sys-row { display: grid; grid-template-columns: 11rem 1fr; gap: var(--s-4); align-items: baseline; padding-block: var(--s-4); border-bottom: 1px solid var(--c-rule); }
+  .sys-row:target { background: var(--c-surface); }
+  .sys-row-label { color: var(--c-text); }
+  @media (max-width: 36rem) { .sys-row { grid-template-columns: 1fr; gap: var(--s-1); } }
+</style>

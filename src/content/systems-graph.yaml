@@ -21,3 +21,8 @@ edges:
 projects:
   rexi: [voice, model, interpreter, authorization, state, evaluation]
   maltrace: [security, telemetry, model, evaluation]
+  # QualityMesh (src/content/work/qualitymesh.mdx, src/engine/release-gate.ts): no voice, model, interpreter,
+  # state, security or telemetry facts exist for it. decide() returns SHIP/BLOCK — a gate that authorizes or
+  # blocks the release, same as Rexi's VALIDATED/REJECTED authorization step. Policy judging each check's
+  # evidence (pass/fail/missing) against a rule is the evaluation step.
+  qualitymesh: [authorization, evaluation]
